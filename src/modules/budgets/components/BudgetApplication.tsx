@@ -614,6 +614,8 @@ export function BudgetApplication() {
                 <label>
                   Condição de pagamento
                   <select
+                    className="payment-method-select"
+                    aria-label="Condição de pagamento"
                     value={["Depósito", "PIX", "Boleto", "Transferência"].includes(budget.payment) ? budget.payment : ""}
                     onChange={(e) =>
                       setBudget({ ...budget, payment: e.target.value })

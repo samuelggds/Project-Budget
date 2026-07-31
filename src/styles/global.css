@@ -329,6 +329,11 @@ input[readonly] {
   font-weight: 800;
   cursor: default;
 }
+
+.payment-method-select {
+  appearance: auto;
+  cursor: pointer;
+}
 textarea {
   resize: vertical;
 }
