@@ -613,12 +613,17 @@ export function BudgetApplication() {
               <div className="form-grid">
                 <label>
                   Condição de pagamento
-                  <input
-                    value={budget.payment}
+                  <select
+                    value={["Depósito", "PIX", "Boleto"].includes(budget.payment) ? budget.payment : ""}
                     onChange={(e) =>
                       setBudget({ ...budget, payment: e.target.value })
                     }
-                  />
+                  >
+                    <option value="" disabled>Selecione a forma de pagamento</option>
+                    <option value="Depósito">Depósito</option>
+                    <option value="PIX">PIX</option>
+                    <option value="Boleto">Boleto</option>
+                  </select>
                 </label>
                 <label>
                   Status

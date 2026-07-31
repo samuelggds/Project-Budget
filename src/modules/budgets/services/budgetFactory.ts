@@ -21,7 +21,7 @@ export function createInitialBudget(): Budget {
     validDays: 5,
     status: "Enviado",
     client: { ...emptyClient },
-    payment: "50% de entrada + 50% na conclusão",
+    payment: "PIX",
     notes:
       "Materiais e mão de obra inclusos. Garantia de 90 dias para os serviços executados.",
     items: [
