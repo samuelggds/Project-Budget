@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 
 export type SmoothSelectOption = {
   value: string;
@@ -24,7 +25,10 @@ export function SmoothSelect({ value, options, onChange, ariaLabel, className = 
 
   useEffect(() => {
     const media = window.matchMedia("(max-width: 720px)");
-    const updateMode = () => setIsMobile(media.matches);
+    const updateMode = () => {
+      setIsMobile(media.matches);
+      if (!media.matches) setOpen(false);
+    };
     updateMode();
     media.addEventListener("change", updateMode);
     return () => media.removeEventListener("change", updateMode);
@@ -53,11 +57,13 @@ export function SmoothSelect({ value, options, onChange, ariaLabel, className = 
   }
 
   return (
-    <div className={`smooth-select ${className}`.trim()}>
-      <button type="button" className="smooth-select-trigger" aria-label={ariaLabel} aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen(true)}>
-        <span>{selectedLabel}</span><i>⌄</i>
-      </button>
-      {open && (
+    <>
+      <div className={`smooth-select ${className}`.trim()}>
+        <button type="button" className="smooth-select-trigger" aria-label={ariaLabel} aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen(true)}>
+          <span>{selectedLabel}</span><i>⌄</i>
+        </button>
+      </div>
+      {open && createPortal(
         <div className="smooth-select-backdrop" role="presentation" onClick={() => setOpen(false)}>
           <div className="smooth-select-sheet" role="listbox" aria-label={ariaLabel} onClick={(event) => event.stopPropagation()}>
             <div className="smooth-select-handle" />
@@ -70,8 +76,9 @@ export function SmoothSelect({ value, options, onChange, ariaLabel, className = 
               ))}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
-    </div>
+    </>
   );
 }
