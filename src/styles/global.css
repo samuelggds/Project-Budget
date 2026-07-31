@@ -620,6 +620,9 @@ textarea {
 .saved-toolbar > span {
   margin-left: auto;
 }
+.split-toolbar {
+  margin-top: 18px;
+}
 .saved-toolbar select {
   width: auto;
   min-width: 150px;
@@ -771,6 +774,23 @@ textarea {
 .split-payment.paid { background: #dcf6ea; color: var(--green); }
 .split-payment.pending { background: #fff2d9; color: #a36000; }
 .split-pay-button { padding: 8px 9px; color: var(--blue); }
+.split-actions { display: grid; gap: 6px; align-items: start; }
+.split-actions small { margin: 0; }
+.split-delete-button {
+  width: max-content;
+  border: 0;
+  background: transparent;
+  color: #b42318;
+  padding: 2px 0;
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.split-delete-button:disabled {
+  color: var(--muted);
+  cursor: not-allowed;
+  opacity: 0.55;
+}
 .load-controls { display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-top: 16px; }
 .load-controls > span { margin-right: auto; color: var(--muted); font-size: 11px; }
 .load-controls .button { padding: 9px 12px; }
