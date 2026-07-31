@@ -19,6 +19,7 @@ import { getAllowedNextStatuses } from "../services/budgetStatus";
 import { calculateAllSplits, calculateBudgetSplit, calculatePendingSplits, hasSplit, SPLIT_RATE } from "../services/budgetSplit";
 import { supabase } from "../../auth/services/supabase";
 import { deleteBudgetFromDatabase, deleteServiceFromDatabase, loadDatabase, markSplitAsPaid, saveBudgetToDatabase, saveClientToDatabase, saveServiceToDatabase } from "../../shared/services/supabaseDatabase";
+import { SmoothSelect } from "../../shared/components/SmoothSelect";
 
 export function BudgetApplication() {
   const [tab, setTab] = useState<"new" | "saved" | "clients" | "services" | "splits" | "settings">("new");
@@ -409,20 +410,9 @@ export function BudgetApplication() {
                 </label>
                 <label>
                   Validade
-                  <select
-                    value={budget.validDays}
-                    onChange={(e) =>
-                      setBudget({
-                        ...budget,
-                        validDays: Number(e.target.value),
-                      })
-                    }
-                  >
-                    <option value={5}>5 dias</option>
-                    <option value={10}>10 dias</option>
-                    <option value={15}>15 dias</option>
-                    <option value={30}>30 dias</option>
-                  </select>
+                  <SmoothSelect ariaLabel="Validade" value={String(budget.validDays)} onChange={(value) => setBudget({ ...budget, validDays: Number(value) })} options={[
+                    { value: "5", label: "5 dias" }, { value: "10", label: "10 dias" }, { value: "15", label: "15 dias" }, { value: "30", label: "30 dias" },
+                  ]} />
                 </label>
               </div>
             </section>
@@ -438,10 +428,10 @@ export function BudgetApplication() {
               <div className="form-grid">
                 <label className="full">
                   Selecionar cliente cadastrado
-                  <select value={budget.client.id || ""} onChange={(e) => selectClient(e.target.value)}>
-                    <option value="">Preencher manualmente</option>
-                    {clients.map((client) => <option key={client.id} value={client.id}>{client.name} · {client.document || "sem documento"}</option>)}
-                  </select>
+                  <SmoothSelect ariaLabel="Selecionar cliente" value={budget.client.id || ""} onChange={selectClient} options={[
+                    { value: "", label: "Preencher manualmente" },
+                    ...clients.map((client) => ({ value: client.id, label: `${client.name} · ${client.document || "sem documento"}` })),
+                  ]} />
                 </label>
                 <label className="wide">
                   Nome / Razão social
@@ -569,18 +559,9 @@ export function BudgetApplication() {
                         updateItem(item.id, "quantity", Number(e.target.value))
                       }
                     />
-                    <select
-                      value={item.unit}
-                      onChange={(e) =>
-                        updateItem(item.id, "unit", e.target.value)
-                      }
-                    >
-                      <option>un.</option>
-                      <option>serv.</option>
-                      <option>h</option>
-                      <option>m</option>
-                      <option>kg</option>
-                    </select>
+                    <SmoothSelect ariaLabel="Unidade do item" value={item.unit} onChange={(value) => updateItem(item.id, "unit", value)} options={[
+                      { value: "un.", label: "un." }, { value: "serv.", label: "serv." }, { value: "h", label: "h" }, { value: "m", label: "m" }, { value: "kg", label: "kg" },
+                    ]} />
                     <div className="money-input">
                       <span>R$</span>
                       <input
@@ -634,20 +615,9 @@ export function BudgetApplication() {
               <div className="form-grid">
                 <label>
                   Condição de pagamento
-                  <select
-                    className="payment-method-select"
-                    aria-label="Condição de pagamento"
-                    value={["Depósito", "PIX", "Boleto", "Transferência"].includes(budget.payment) ? budget.payment : ""}
-                    onChange={(e) =>
-                      setBudget({ ...budget, payment: e.target.value })
-                    }
-                  >
-                    <option value="" disabled>Selecione a forma de pagamento</option>
-                    <option value="Depósito">Depósito</option>
-                    <option value="PIX">PIX</option>
-                    <option value="Boleto">Boleto</option>
-                    <option value="Transferência">Transferência</option>
-                  </select>
+                  <SmoothSelect className="payment-method-select" ariaLabel="Condição de pagamento" value={["Depósito", "PIX", "Boleto", "Transferência"].includes(budget.payment) ? budget.payment : ""} onChange={(value) => setBudget({ ...budget, payment: value })} options={[
+                    { value: "", label: "Selecione a forma de pagamento", disabled: true }, { value: "Depósito", label: "Depósito" }, { value: "PIX", label: "PIX" }, { value: "Boleto", label: "Boleto" }, { value: "Transferência", label: "Transferência" },
+                  ]} />
                 </label>
                 <label>
                   Status
@@ -840,34 +810,24 @@ export function BudgetApplication() {
                   }}
                 />
               </div>
-              <select
-                aria-label="Filtrar por status"
+              <SmoothSelect
+                ariaLabel="Filtrar por status"
                 value={statusFilter}
-                onChange={(e) => {
-                  setStatusFilter(e.target.value);
+                onChange={(value) => {
+                  setStatusFilter(value);
                   setHistoryVisibleCount(10);
                 }}
-              >
-                <option>Todos</option>
-                <option>Enviado</option>
-                <option>Recusado</option>
-                <option>Em andamento</option>
-                <option>Aprovado</option>
-                <option>Pago</option>
-              </select>
-              <select
-                aria-label="Filtrar por período"
+                options={["Todos", "Enviado", "Recusado", "Em andamento", "Aprovado", "Pago"].map((value) => ({ value, label: value }))}
+              />
+              <SmoothSelect
+                ariaLabel="Filtrar por período"
                 value={periodFilter}
-                onChange={(e) => {
-                  setPeriodFilter(e.target.value);
+                onChange={(value) => {
+                  setPeriodFilter(value);
                   setHistoryVisibleCount(10);
                 }}
-              >
-                <option value="Todos">Todo o período</option>
-                <option value="7">Últimos 7 dias</option>
-                <option value="30">Últimos 30 dias</option>
-                <option value="90">Últimos 90 dias</option>
-              </select>
+                options={[{ value: "Todos", label: "Todo o período" }, { value: "7", label: "Últimos 7 dias" }, { value: "30", label: "Últimos 30 dias" }, { value: "90", label: "Últimos 90 dias" }]}
+              />
               <button className="clear-filter" onClick={clearFilters}>
                 Limpar filtros
               </button>
@@ -977,7 +937,7 @@ export function BudgetApplication() {
               <div className="form-grid">
                 <label>Código<input placeholder="Ex.: SRV-001" value={serviceDraft.code} onChange={(e) => setServiceDraft({ ...serviceDraft, code: e.target.value.toUpperCase() })} /></label>
                 <label className="wide">Serviço<input value={serviceDraft.description} onChange={(e) => setServiceDraft({ ...serviceDraft, description: e.target.value })} /></label>
-                <label>Unidade<select value={serviceDraft.unit} onChange={(e) => setServiceDraft({ ...serviceDraft, unit: e.target.value })}><option>serv.</option><option>un.</option><option>h</option><option>m</option><option>kg</option></select></label>
+                <label>Unidade<SmoothSelect ariaLabel="Unidade do serviço" value={serviceDraft.unit} onChange={(value) => setServiceDraft({ ...serviceDraft, unit: value })} options={[{ value: "serv.", label: "serv." }, { value: "un.", label: "un." }, { value: "h", label: "h" }, { value: "m", label: "m" }, { value: "kg", label: "kg" }]} /></label>
                 <label>Valor<input type="number" min="0" step=".01" value={serviceDraft.unitPrice || ""} onChange={(e) => setServiceDraft({ ...serviceDraft, unitPrice: Number(e.target.value) })} /></label>
               </div>
               <div className="service-form-actions">
