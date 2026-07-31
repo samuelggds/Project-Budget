@@ -20,7 +20,7 @@ import type { Service } from "../../services/types/Service";
 import { getAllowedNextStatuses } from "../services/budgetStatus";
 import { calculateAllSplits, calculateBudgetSplit, hasSplit, SPLIT_RATE } from "../services/budgetSplit";
 import { supabase } from "../../auth/services/supabase";
-import { deleteBudgetFromDatabase, loadDatabase, saveBudgetToDatabase, saveClientToDatabase, saveServiceToDatabase } from "../../shared/services/supabaseDatabase";
+import { deleteBudgetFromDatabase, deleteServiceFromDatabase, loadDatabase, saveBudgetToDatabase, saveClientToDatabase, saveServiceToDatabase } from "../../shared/services/supabaseDatabase";
 
 export function BudgetApplication() {
   const [tab, setTab] = useState<"new" | "saved" | "clients" | "services" | "splits" | "settings">("new");
@@ -143,13 +143,26 @@ export function BudgetApplication() {
     } catch (error) { notify(`Erro: ${(error as Error).message}`); }
   };
 
+  const removeService = async (service: Service) => {
+    if (!window.confirm(`Excluir o serviço ${service.code} — ${service.description}?`)) return;
+    try {
+      await deleteServiceFromDatabase(service.id);
+      setServices(services.filter((item) => item.id !== service.id));
+      if (serviceDraft.id === service.id) setServiceDraft({ id: "", code: "", description: "", unit: "serv.", unitPrice: 0 });
+      notify("Serviço excluído do banco");
+    } catch (error) { notify(`Erro: ${(error as Error).message}`); }
+  };
+
   const downloadServicesPdf = async () => {
     const element = document.getElementById("service-pdf");
     if (!element) return;
     notify("Gerando planilha em PDF...");
-    const pdf = await createBudgetPdf(element, `planilha-servicos-${new Date().toISOString().slice(0, 10)}.pdf`);
-    await pdf.download();
-    notify("Planilha baixada em PDF");
+    element.classList.add("is-exporting");
+    try {
+      const pdf = await createBudgetPdf(element, `planilha-servicos-${new Date().toISOString().slice(0, 10)}.pdf`);
+      await pdf.download();
+      notify("Planilha baixada em PDF");
+    } finally { element.classList.remove("is-exporting"); }
   };
 
   const saveBudget = async () => {
@@ -926,8 +939,8 @@ export function BudgetApplication() {
               <div className="registry-title"><h2>Planilha de serviços</h2><div className="registry-actions"><button className="button ghost" disabled={!services.length} onClick={downloadServicesPdf}>↧ Gerar PDF</button><button className="button soft" onClick={() => { setServiceDraft({ id: "", code: "", description: "", unit: "serv.", unitPrice: 0 }); document.getElementById("service-form")?.scrollIntoView({ behavior: "smooth" }); }}>＋ Adicionar serviço</button></div></div>
               <div id="service-pdf" className="services-paper">
                 <div className="services-paper-head"><img src="/MG.jpg" alt="MG Refrigeração" /><div><h2>PLANILHA DE SERVIÇOS</h2><p>MG Refrigeração · Emitida em {new Date().toLocaleDateString("pt-BR")}</p></div></div>
-                <div className="service-head pdf-service-head"><span>Código</span><span>Serviço</span><span>Unidade</span><span>Valor</span></div>
-                {services.map((service) => <div className="service-row pdf-service-row" key={service.id}><code>{service.code}</code><div><strong>{service.description}</strong></div><span>{service.unit}</span><b>{money(service.unitPrice)}</b><button onClick={() => setServiceDraft(service)}>Editar</button></div>)}
+                <div className="service-head pdf-service-head"><span>Código</span><span>Serviço</span><span>Unidade</span><span>Valor</span><span className="service-actions-label">Ações</span></div>
+                {services.map((service) => <div className="service-row pdf-service-row" key={service.id}><code>{service.code}</code><div><strong>{service.description}</strong></div><span>{service.unit}</span><b>{money(service.unitPrice)}</b><div className="service-actions"><button onClick={() => setServiceDraft(service)}>Editar</button><button className="delete-service" onClick={() => removeService(service)}>Excluir</button></div></div>)}
                 <footer>{services.length} serviço(s) cadastrado(s)</footer>
               </div>
               {!services.length && <p className="registry-empty">Cadastre um serviço para usar o preenchimento automático.</p>}

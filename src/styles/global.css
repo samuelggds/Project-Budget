@@ -734,7 +734,7 @@ textarea {
 .registry-row strong, .registry-row small, .service-row strong, .service-row small { display: block; }
 .registry-row small, .service-row small { color: var(--muted); margin-top: 4px; font-size: 10px; }
 .registry-row button, .service-row button { border: 0; background: none; color: var(--blue); font-weight: 700; }
-.service-head, .service-row { grid-template-columns: 120px 1fr 140px 70px; }
+.service-head, .service-row { grid-template-columns: 110px 1fr 90px 130px 120px; }
 .service-head { color: var(--muted); background: #f7f8fb; font-size: 9px; font-weight: 800; text-transform: uppercase; }
 .service-row code { color: var(--blue); font-weight: 800; }
 .registry-empty { color: var(--muted); text-align: center; padding: 30px; }
@@ -743,8 +743,11 @@ textarea {
 .services-paper-head img { width: 75px; height: 60px; object-fit: contain; }
 .services-paper-head h2 { color: var(--navy); margin: 0 0 5px; font-size: 18px; }
 .services-paper-head p { color: var(--muted); margin: 0; font-size: 10px; }
-.pdf-service-head, .pdf-service-row { grid-template-columns: 110px 1fr 90px 130px; }
-.pdf-service-row button { display: none; }
+.pdf-service-head, .pdf-service-row { grid-template-columns: 110px 1fr 90px 130px 120px; }
+.service-actions { display: flex; gap: 8px; }
+.service-row .delete-service { color: var(--red); }
+.services-paper.is-exporting .pdf-service-head, .services-paper.is-exporting .pdf-service-row { grid-template-columns: 110px 1fr 90px 130px; }
+.services-paper.is-exporting .service-actions, .services-paper.is-exporting .service-actions-label { display: none; }
 .services-paper footer { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 10px; text-align: right; color: var(--muted); font-size: 10px; }
 .split-card { max-width: 1320px; margin: auto; }
 .split-summary { display: grid; grid-template-columns: 1fr 1fr 1.35fr; gap: 14px; margin-bottom: 14px; }

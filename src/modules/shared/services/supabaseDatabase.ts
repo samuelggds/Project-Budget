@@ -92,6 +92,11 @@ export async function saveServiceToDatabase(service: Service) {
   assertNoError(error); return mapService(data as Record<string, unknown>);
 }
 
+export async function deleteServiceFromDatabase(id: string) {
+  const { error } = await supabase.from("services").delete().eq("id", id);
+  assertNoError(error);
+}
+
 export async function saveBudgetToDatabase(budget: Budget) {
   const updatedAt = new Date().toISOString();
   let client = budget.client;
