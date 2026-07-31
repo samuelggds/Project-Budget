@@ -31,7 +31,7 @@ export function createInitialBudget(): Budget {
         serviceCode: "",
         description: "",
         quantity: 1,
-        unit: "serv.",
+        unit: "un.",
         unitPrice: 0,
       },
     ],

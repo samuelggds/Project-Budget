@@ -21,6 +21,11 @@ import { supabase } from "../../auth/services/supabase";
 import { deleteBudgetFromDatabase, deleteServiceFromDatabase, loadDatabase, markSplitAsPaid, saveBudgetToDatabase, saveClientToDatabase, saveServiceToDatabase } from "../../shared/services/supabaseDatabase";
 import { SmoothSelect } from "../../shared/components/SmoothSelect";
 
+const withDefaultItemUnit = (current: Budget): Budget => ({
+  ...current,
+  items: current.items.map((item) => ({ ...item, unit: "un." })),
+});
+
 export function BudgetApplication() {
   const [tab, setTab] = useState<"new" | "saved" | "clients" | "services" | "splits" | "settings">("new");
   const [preview, setPreview] = useState(false);
@@ -71,8 +76,9 @@ export function BudgetApplication() {
   useEffect(() => {
     loadDatabase()
       .then((data) => {
-        setClients(data.clients); setServices(data.services); setSaved(data.budgets);
-        if (data.budgets.length) setBudget(createNextBudget(data.budgets));
+        const normalizedBudgets = data.budgets.map(withDefaultItemUnit);
+        setClients(data.clients); setServices(data.services); setSaved(normalizedBudgets);
+        if (normalizedBudgets.length) setBudget(createNextBudget(normalizedBudgets));
       })
       .catch((error: Error) => setDatabaseError(error.message))
       .finally(() => setDatabaseLoading(false));
@@ -136,7 +142,7 @@ export function BudgetApplication() {
         serviceId: service.id,
         serviceCode: service.code,
         description: service.description,
-        unit: service.unit,
+        unit: "un.",
         unitPrice: service.unitPrice,
       } : { ...item, serviceCode: code }),
     }));
@@ -217,7 +223,7 @@ export function BudgetApplication() {
 
   const saveBudget = async () => {
     try {
-      const current = await saveBudgetToDatabase(budget);
+      const current = await saveBudgetToDatabase(withDefaultItemUnit(budget));
       setBudget(current); setSaved([current, ...saved.filter((item) => item.id !== current.id)]);
       notify("Orçamento salvo no banco");
     } catch (error) { notify(`Erro: ${(error as Error).message}`); }
@@ -230,7 +236,7 @@ export function BudgetApplication() {
   };
 
   const openBudget = (item: Budget) => {
-    setBudget(item);
+    setBudget(withDefaultItemUnit(item));
     setTab("new");
     setPreview(false);
   };
@@ -258,7 +264,7 @@ export function BudgetApplication() {
     const blob = pdf.blob;
     await savePdf(budget.id, blob);
     const updated = {
-      ...budget,
+      ...withDefaultItemUnit(budget),
       pdfSavedAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -559,9 +565,7 @@ export function BudgetApplication() {
                         updateItem(item.id, "quantity", Number(e.target.value))
                       }
                     />
-                    <SmoothSelect ariaLabel="Unidade do item" value={item.unit} onChange={(value) => updateItem(item.id, "unit", value)} options={[
-                      { value: "un.", label: "un." }, { value: "serv.", label: "serv." }, { value: "h", label: "h" }, { value: "m", label: "m" }, { value: "kg", label: "kg" },
-                    ]} />
+                    <input value="un." readOnly aria-label="Unidade do item" title="A unidade padrão dos itens é un." />
                     <div className="money-input">
                       <span>R$</span>
                       <input
@@ -719,7 +723,7 @@ export function BudgetApplication() {
                       <td>{String(index + 1).padStart(2, "0")}</td>
                       <td>{item.description || "Item ou serviço"}</td>
                       <td>{item.quantity}</td>
-                      <td>{item.unit}</td>
+                      <td>un.</td>
                       <td>{money(item.unitPrice)}</td>
                       <td>{money(item.quantity * item.unitPrice)}</td>
                     </tr>
