@@ -9,33 +9,19 @@ import {
   calculateBudgetTotal,
   formatMoney as money,
 } from "../services/budgetCalculations";
-import { filterBudgets } from "../../history/services/filterBudgets";
+import {
+  filterBudgets,
+} from "../../history/services/filterBudgets";
 import { createBudgetPdf, downloadPdfBlob } from "../../pdf/services/budgetPdf";
 import type { Client } from "../../clients/types/Client";
 import type { Service } from "../../services/types/Service";
 import { getAllowedNextStatuses } from "../services/budgetStatus";
-import {
-  calculateAllSplits,
-  calculateBudgetSplit,
-  calculatePendingSplits,
-  hasSplit,
-  SPLIT_RATE,
-} from "../services/budgetSplit";
+import { calculateAllSplits, calculateBudgetSplit, calculatePendingSplits, hasSplit, SPLIT_RATE } from "../services/budgetSplit";
 import { supabase } from "../../auth/services/supabase";
-import {
-  deleteBudgetFromDatabase,
-  deleteServiceFromDatabase,
-  loadDatabase,
-  markSplitAsPaid,
-  saveBudgetToDatabase,
-  saveClientToDatabase,
-  saveServiceToDatabase,
-} from "../../shared/services/supabaseDatabase";
+import { deleteBudgetFromDatabase, deleteServiceFromDatabase, loadDatabase, markSplitAsPaid, saveBudgetToDatabase, saveClientToDatabase, saveServiceToDatabase } from "../../shared/services/supabaseDatabase";
 
 export function BudgetApplication() {
-  const [tab, setTab] = useState<
-    "new" | "saved" | "clients" | "services" | "splits" | "settings"
-  >("new");
+  const [tab, setTab] = useState<"new" | "saved" | "clients" | "services" | "splits" | "settings">("new");
   const [preview, setPreview] = useState(false);
   const [budget, setBudget] = useState<Budget>(createInitialBudget);
   const [saved, setSaved] = useState<Budget[]>([]);
@@ -50,25 +36,8 @@ export function BudgetApplication() {
   const [services, setServices] = useState<Service[]>([]);
   const [databaseLoading, setDatabaseLoading] = useState(true);
   const [databaseError, setDatabaseError] = useState("");
-  const [clientDraft, setClientDraft] = useState<Client>({
-    id: "",
-    name: "",
-    document: "",
-    phone: "",
-    email: "",
-    contact: "",
-    address: "",
-    city: "",
-    state: "CE",
-    cep: "",
-  });
-  const [serviceDraft, setServiceDraft] = useState<Service>({
-    id: "",
-    code: "",
-    description: "",
-    unit: "serv.",
-    unitPrice: 0,
-  });
+  const [clientDraft, setClientDraft] = useState<Client>({ id: "", name: "", document: "", phone: "", email: "", contact: "", address: "", city: "", state: "CE", cep: "" });
+  const [serviceDraft, setServiceDraft] = useState<Service>({ id: "", code: "", description: "", unit: "serv.", unitPrice: 0 });
 
   const total = useMemo(() => calculateBudgetTotal(budget), [budget]);
   const filtered = filterBudgets(saved, {
@@ -90,9 +59,7 @@ export function BudgetApplication() {
       item.client.email,
       item.status,
     ].some((value) =>
-      String(value ?? "")
-        .toLocaleLowerCase("pt-BR")
-        .includes(normalizedSplitSearch),
+      String(value ?? "").toLocaleLowerCase("pt-BR").includes(normalizedSplitSearch),
     );
   });
   const visibleSplitBudgets = filteredSplitBudgets.slice(0, splitVisibleCount);
@@ -103,9 +70,7 @@ export function BudgetApplication() {
   useEffect(() => {
     loadDatabase()
       .then((data) => {
-        setClients(data.clients);
-        setServices(data.services);
-        setSaved(data.budgets);
+        setClients(data.clients); setServices(data.services); setSaved(data.budgets);
         if (data.budgets.length) setBudget(createNextBudget(data.budgets));
       })
       .catch((error: Error) => setDatabaseError(error.message))
@@ -151,153 +116,69 @@ export function BudgetApplication() {
   };
 
   const fillServiceByCode = (itemId: string, code: string) => {
-    const service = services.find(
-      (item) =>
-        item.code.toLowerCase() === code.trim().toLowerCase() ||
-        item.id === code.trim(),
-    );
+    const service = services.find((item) => item.code.toLowerCase() === code.trim().toLowerCase() || item.id === code.trim());
     setBudget((old) => ({
       ...old,
-      items: old.items.map((item) =>
-        item.id !== itemId
-          ? item
-          : service
-            ? {
-                ...item,
-                serviceId: service.id,
-                serviceCode: service.code,
-                description: service.description,
-                unit: service.unit,
-                unitPrice: service.unitPrice,
-              }
-            : { ...item, serviceCode: code },
-      ),
+      items: old.items.map((item) => item.id !== itemId ? item : service ? {
+        ...item,
+        serviceId: service.id,
+        serviceCode: service.code,
+        description: service.description,
+        unit: service.unit,
+        unitPrice: service.unitPrice,
+      } : { ...item, serviceCode: code }),
     }));
   };
 
   const registerClient = async () => {
     if (!clientDraft.name.trim()) return notify("Informe o nome do cliente");
     try {
-      const current = await saveClientToDatabase({
-        ...clientDraft,
-        id: clientDraft.id || crypto.randomUUID(),
-      });
-      setClients([
-        current,
-        ...clients.filter((item) => item.id !== current.id),
-      ]);
-      setClientDraft({
-        id: "",
-        name: "",
-        document: "",
-        phone: "",
-        email: "",
-        contact: "",
-        address: "",
-        city: "",
-        state: "CE",
-        cep: "",
-      });
+      const current = await saveClientToDatabase({ ...clientDraft, id: clientDraft.id || crypto.randomUUID() });
+      setClients([current, ...clients.filter((item) => item.id !== current.id)]);
+      setClientDraft({ id: "", name: "", document: "", phone: "", email: "", contact: "", address: "", city: "", state: "CE", cep: "" });
       notify("Cliente salvo no banco");
-    } catch (error) {
-      notify(`Erro: ${(error as Error).message}`);
-    }
+    } catch (error) { notify(`Erro: ${(error as Error).message}`); }
   };
 
   const registerService = async () => {
-    if (!serviceDraft.code.trim() || !serviceDraft.description.trim())
-      return notify("Informe o código e o serviço");
-    if (
-      services.some(
-        (item) =>
-          item.code.toLowerCase() === serviceDraft.code.toLowerCase() &&
-          item.id !== serviceDraft.id,
-      )
-    )
-      return notify("Este código já está cadastrado");
+    if (!serviceDraft.code.trim() || !serviceDraft.description.trim()) return notify("Informe o código e o serviço");
+    if (services.some((item) => item.code.toLowerCase() === serviceDraft.code.toLowerCase() && item.id !== serviceDraft.id)) return notify("Este código já está cadastrado");
     try {
-      const current = await saveServiceToDatabase({
-        ...serviceDraft,
-        id: serviceDraft.id || crypto.randomUUID(),
-      });
-      setServices([
-        current,
-        ...services.filter((item) => item.id !== current.id),
-      ]);
-      setServiceDraft({
-        id: "",
-        code: "",
-        description: "",
-        unit: "serv.",
-        unitPrice: 0,
-      });
+      const current = await saveServiceToDatabase({ ...serviceDraft, id: serviceDraft.id || crypto.randomUUID() });
+      setServices([current, ...services.filter((item) => item.id !== current.id)]);
+      setServiceDraft({ id: "", code: "", description: "", unit: "serv.", unitPrice: 0 });
       notify("Serviço salvo no banco");
-    } catch (error) {
-      notify(`Erro: ${(error as Error).message}`);
-    }
+    } catch (error) { notify(`Erro: ${(error as Error).message}`); }
   };
 
   const advanceStatus = async (nextStatus: Budget["status"]) => {
-    if (!getAllowedNextStatuses(budget.status).includes(nextStatus))
-      return notify("Mudança de status não permitida");
+    if (!getAllowedNextStatuses(budget.status).includes(nextStatus)) return notify("Mudança de status não permitida");
     try {
-      const updated = await saveBudgetToDatabase({
-        ...budget,
-        status: nextStatus,
-      });
-      setBudget(updated);
-      setSaved([updated, ...saved.filter((item) => item.id !== updated.id)]);
+      const updated = await saveBudgetToDatabase({ ...budget, status: nextStatus });
+      setBudget(updated); setSaved([updated, ...saved.filter((item) => item.id !== updated.id)]);
       notify(`Status alterado para ${nextStatus}`);
-    } catch (error) {
-      notify(`Erro: ${(error as Error).message}`);
-    }
+    } catch (error) { notify(`Erro: ${(error as Error).message}`); }
   };
 
   const removeService = async (service: Service) => {
-    if (
-      !window.confirm(
-        `Excluir o serviço ${service.code} — ${service.description}?`,
-      )
-    )
-      return;
+    if (!window.confirm(`Excluir o serviço ${service.code} — ${service.description}?`)) return;
     try {
       await deleteServiceFromDatabase(service.id);
       setServices(services.filter((item) => item.id !== service.id));
-      if (serviceDraft.id === service.id)
-        setServiceDraft({
-          id: "",
-          code: "",
-          description: "",
-          unit: "serv.",
-          unitPrice: 0,
-        });
+      if (serviceDraft.id === service.id) setServiceDraft({ id: "", code: "", description: "", unit: "serv.", unitPrice: 0 });
       notify("Serviço excluído do banco");
-    } catch (error) {
-      notify(`Erro: ${(error as Error).message}`);
-    }
+    } catch (error) { notify(`Erro: ${(error as Error).message}`); }
   };
 
   const paySplit = async (item: Budget) => {
-    if (
-      item.splitPaidAt ||
-      !window.confirm(
-        `Confirmar o pagamento do split de ${money(calculateBudgetSplit(item))} do orçamento ${item.number}?`,
-      )
-    )
-      return;
+    if (item.splitPaidAt || !window.confirm(`Confirmar o pagamento do split de ${money(calculateBudgetSplit(item))} do orçamento ${item.number}?`)) return;
     try {
       const splitPaidAt = await markSplitAsPaid(item.id);
       const updated = { ...item, splitPaidAt };
-      setSaved(
-        saved.map((budgetItem) =>
-          budgetItem.id === item.id ? updated : budgetItem,
-        ),
-      );
+      setSaved(saved.map((budgetItem) => budgetItem.id === item.id ? updated : budgetItem));
       if (budget.id === item.id) setBudget(updated);
       notify("Split marcado como pago e abatido do total");
-    } catch (error) {
-      notify(`Erro: ${(error as Error).message}`);
-    }
+    } catch (error) { notify(`Erro: ${(error as Error).message}`); }
   };
 
   const downloadServicesPdf = async () => {
@@ -306,26 +187,18 @@ export function BudgetApplication() {
     notify("Gerando planilha em PDF...");
     element.classList.add("is-exporting");
     try {
-      const pdf = await createBudgetPdf(
-        element,
-        `planilha-servicos-${new Date().toISOString().slice(0, 10)}.pdf`,
-      );
+      const pdf = await createBudgetPdf(element, `planilha-servicos-${new Date().toISOString().slice(0, 10)}.pdf`);
       await pdf.download();
       notify("Planilha baixada em PDF");
-    } finally {
-      element.classList.remove("is-exporting");
-    }
+    } finally { element.classList.remove("is-exporting"); }
   };
 
   const saveBudget = async () => {
     try {
       const current = await saveBudgetToDatabase(budget);
-      setBudget(current);
-      setSaved([current, ...saved.filter((item) => item.id !== current.id)]);
+      setBudget(current); setSaved([current, ...saved.filter((item) => item.id !== current.id)]);
       notify("Orçamento salvo no banco");
-    } catch (error) {
-      notify(`Erro: ${(error as Error).message}`);
-    }
+    } catch (error) { notify(`Erro: ${(error as Error).message}`); }
   };
 
   const newBudget = () => {
@@ -350,12 +223,9 @@ export function BudgetApplication() {
     try {
       await deleteBudgetFromDatabase(item.id);
       const next = saved.filter((savedItem) => savedItem.id !== item.id);
-      setSaved(next);
-      await deletePdf(item.id);
+      setSaved(next); await deletePdf(item.id);
       notify("Orçamento e PDF excluídos");
-    } catch (error) {
-      notify(`Erro: ${(error as Error).message}`);
-    }
+    } catch (error) { notify(`Erro: ${(error as Error).message}`); }
   };
 
   const generateAndStorePdf = async () => {
@@ -394,39 +264,11 @@ export function BudgetApplication() {
     setHistoryVisibleCount(10);
   };
 
-  if (databaseLoading)
-    return (
-      <div className="auth-loading">
-        <img src="/MG.jpg" alt="MG" />
-        <span>Carregando dados do banco...</span>
-      </div>
-    );
+  if (databaseLoading) return <div className="auth-loading"><img src="/MG.jpg" alt="MG" /><span>Carregando dados do banco...</span></div>;
 
-  if (databaseError)
-    return (
-      <main className="database-error-page">
-        <section className="login-card">
-          <div className="login-brand">
-            <img src="/MG.jpg" alt="MG" />
-            <div>
-              <strong>Erro ao acessar o banco</strong>
-              <span>Confira a configuração do Supabase</span>
-            </div>
-          </div>
-          <div className="login-error">{databaseError}</div>
-          <p>
-            Confirme se as tabelas foram criadas, se o RLS possui as políticas
-            indicadas e se as variáveis do arquivo .env estão corretas.
-          </p>
-          <button
-            className="button primary"
-            onClick={() => window.location.reload()}
-          >
-            Tentar novamente
-          </button>
-        </section>
-      </main>
-    );
+  if (databaseError) return (
+    <main className="database-error-page"><section className="login-card"><div className="login-brand"><img src="/MG.jpg" alt="MG" /><div><strong>Erro ao acessar o banco</strong><span>Confira a configuração do Supabase</span></div></div><div className="login-error">{databaseError}</div><p>Confirme se as tabelas foram criadas, se o RLS possui as políticas indicadas e se as variáveis do arquivo .env estão corretas.</p><button className="button primary" onClick={() => window.location.reload()}>Tentar novamente</button></section></main>
+  );
 
   return (
     <div className="app-shell">
@@ -439,7 +281,10 @@ export function BudgetApplication() {
           </div>
         </div>
         <nav>
-          <button className={tab === "new" ? "active" : ""} onClick={newBudget}>
+          <button
+            className={tab === "new" ? "active" : ""}
+            onClick={newBudget}
+          >
             <i>＋</i>Novo orçamento
           </button>
           <button
@@ -448,22 +293,13 @@ export function BudgetApplication() {
           >
             <i>▤</i>Orçamentos
           </button>
-          <button
-            className={tab === "clients" ? "active" : ""}
-            onClick={() => setTab("clients")}
-          >
+          <button className={tab === "clients" ? "active" : ""} onClick={() => setTab("clients")}>
             <i>♙</i>Clientes
           </button>
-          <button
-            className={tab === "services" ? "active" : ""}
-            onClick={() => setTab("services")}
-          >
+          <button className={tab === "services" ? "active" : ""} onClick={() => setTab("services")}>
             <i>▦</i>Serviços
           </button>
-          <button
-            className={tab === "splits" ? "active" : ""}
-            onClick={() => setTab("splits")}
-          >
+          <button className={tab === "splits" ? "active" : ""} onClick={() => setTab("splits")}>
             <i>%</i>Splits
           </button>
           <button
@@ -484,13 +320,7 @@ export function BudgetApplication() {
             <strong>MG Refrigeração</strong>
             <small>Administrador</small>
           </div>
-          <button
-            className="logout-button"
-            title="Sair"
-            onClick={() => void supabase.auth.signOut({ scope: "local" })}
-          >
-            ↪
-          </button>
+          <button className="logout-button" title="Sair" onClick={() => void supabase.auth.signOut({ scope: "local" })}>↪</button>
         </div>
       </aside>
 
@@ -503,28 +333,20 @@ export function BudgetApplication() {
                 ? preview
                   ? "Pré-visualização"
                   : "Novo orçamento"
-                : tab === "saved"
-                  ? "Orçamentos"
-                  : tab === "clients"
-                    ? "Clientes"
-                    : tab === "services"
-                      ? "Catálogo de serviços"
-                      : tab === "splits"
-                        ? "Splits dos orçamentos"
-                        : "Configurações"}
+                : tab === "saved" ? "Orçamentos"
+                : tab === "clients" ? "Clientes"
+                : tab === "services" ? "Catálogo de serviços"
+                : tab === "splits" ? "Splits dos orçamentos"
+                : "Configurações"}
             </h1>
             <p>
               {tab === "new"
                 ? "Preencha os dados e gere uma proposta profissional."
-                : tab === "saved"
-                  ? "Consulte e gerencie suas propostas comerciais."
-                  : tab === "clients"
-                    ? "Cadastre os clientes que serão usados nos orçamentos."
-                    : tab === "services"
-                      ? "Cadastre códigos, descrições e valores para preenchimento automático."
-                      : tab === "splits"
-                        ? "Acompanhe os 5% calculados sobre os orçamentos aprovados."
-                        : "Personalize os dados exibidos nos orçamentos."}
+                : tab === "saved" ? "Consulte e gerencie suas propostas comerciais."
+                : tab === "clients" ? "Cadastre os clientes que serão usados nos orçamentos."
+                : tab === "services" ? "Cadastre códigos, descrições e valores para preenchimento automático."
+                : tab === "splits" ? "Acompanhe os 5% calculados sobre os orçamentos aprovados."
+                : "Personalize os dados exibidos nos orçamentos."}
             </p>
           </div>
           {tab === "new" && (
@@ -608,16 +430,9 @@ export function BudgetApplication() {
               <div className="form-grid">
                 <label className="full">
                   Selecionar cliente cadastrado
-                  <select
-                    value={budget.client.id || ""}
-                    onChange={(e) => selectClient(e.target.value)}
-                  >
+                  <select value={budget.client.id || ""} onChange={(e) => selectClient(e.target.value)}>
                     <option value="">Preencher manualmente</option>
-                    {clients.map((client) => (
-                      <option key={client.id} value={client.id}>
-                        {client.name} · {client.document || "sem documento"}
-                      </option>
-                    ))}
+                    {clients.map((client) => <option key={client.id} value={client.id}>{client.name} · {client.document || "sem documento"}</option>)}
                   </select>
                 </label>
                 <label className="wide">
@@ -726,9 +541,7 @@ export function BudgetApplication() {
                       list="service-codes"
                       placeholder="Código"
                       value={item.serviceCode || ""}
-                      onChange={(e) =>
-                        fillServiceByCode(item.id, e.target.value)
-                      }
+                      onChange={(e) => fillServiceByCode(item.id, e.target.value)}
                     />
                     <div className="description-field">
                       <b>{String(index + 1).padStart(2, "0")}</b>
@@ -793,11 +606,7 @@ export function BudgetApplication() {
                   </div>
                 ))}
                 <datalist id="service-codes">
-                  {services.map((service) => (
-                    <option key={service.id} value={service.code}>
-                      {service.description}
-                    </option>
-                  ))}
+                  {services.map((service) => <option key={service.id} value={service.code}>{service.description}</option>)}
                 </datalist>
               </div>
               <div className="total-box">
@@ -830,30 +639,13 @@ export function BudgetApplication() {
                 </label>
                 <div className="status-actions full">
                   <span>Próxima etapa</span>
-                  {getAllowedNextStatuses(budget.status)
-                    .filter((status) => status !== "Recusado")
-                    .map((status) => (
-                      <button
-                        key={status}
-                        className="button primary"
-                        onClick={() => advanceStatus(status)}
-                      >
-                        Avançar para {status}
-                      </button>
-                    ))}
-                  {getAllowedNextStatuses(budget.status).includes(
-                    "Recusado",
-                  ) && (
-                    <button
-                      className="button danger"
-                      onClick={() => advanceStatus("Recusado")}
-                    >
-                      Marcar como recusado
-                    </button>
+                  {getAllowedNextStatuses(budget.status).filter((status) => status !== "Recusado").map((status) => (
+                    <button key={status} className="button primary" onClick={() => advanceStatus(status)}>Avançar para {status}</button>
+                  ))}
+                  {getAllowedNextStatuses(budget.status).includes("Recusado") && (
+                    <button className="button danger" onClick={() => advanceStatus("Recusado")}>Marcar como recusado</button>
                   )}
-                  {getAllowedNextStatuses(budget.status).length === 0 && (
-                    <strong>Status final: {budget.status}</strong>
-                  )}
+                  {getAllowedNextStatuses(budget.status).length === 0 && <strong>Status final: {budget.status}</strong>}
                 </div>
                 <label className="full">
                   Observações
@@ -1116,26 +908,9 @@ export function BudgetApplication() {
             </div>
             {filtered.length > 10 && (
               <div className="load-controls">
-                <span>
-                  Exibindo {Math.min(historyVisibleCount, filtered.length)} de{" "}
-                  {filtered.length}
-                </span>
-                {historyVisibleCount > 10 && (
-                  <button
-                    className="button ghost"
-                    onClick={() => setHistoryVisibleCount(10)}
-                  >
-                    ← Voltar para 10
-                  </button>
-                )}
-                {historyVisibleCount < filtered.length && (
-                  <button
-                    className="button primary"
-                    onClick={() => setHistoryVisibleCount((count) => count + 5)}
-                  >
-                    Carregar mais 5
-                  </button>
-                )}
+                <span>Exibindo {Math.min(historyVisibleCount, filtered.length)} de {filtered.length}</span>
+                {historyVisibleCount > 10 && <button className="button ghost" onClick={() => setHistoryVisibleCount(10)}>← Voltar para 10</button>}
+                {historyVisibleCount < filtered.length && <button className="button primary" onClick={() => setHistoryVisibleCount((count) => count + 5)}>Carregar mais 5</button>}
               </div>
             )}
           </section>
@@ -1144,133 +919,24 @@ export function BudgetApplication() {
         {tab === "clients" && (
           <section className="registry-layout">
             <div className="card registry-form" id="service-form">
-              <div className="section-title">
-                <span>01</span>
-                <div>
-                  <h2>Cadastro de cliente</h2>
-                  <p>Dados armazenados para reutilização</p>
-                </div>
-              </div>
+              <div className="section-title"><span>01</span><div><h2>Cadastro de cliente</h2><p>Dados armazenados para reutilização</p></div></div>
               <div className="form-grid">
-                <label className="wide">
-                  Nome / Razão social
-                  <input
-                    value={clientDraft.name}
-                    onChange={(e) =>
-                      setClientDraft({ ...clientDraft, name: e.target.value })
-                    }
-                  />
-                </label>
-                <label>
-                  CPF / CNPJ
-                  <input
-                    value={clientDraft.document}
-                    onChange={(e) =>
-                      setClientDraft({
-                        ...clientDraft,
-                        document: e.target.value,
-                      })
-                    }
-                  />
-                </label>
-                <label>
-                  Telefone
-                  <input
-                    value={clientDraft.phone}
-                    onChange={(e) =>
-                      setClientDraft({ ...clientDraft, phone: e.target.value })
-                    }
-                  />
-                </label>
-                <label>
-                  E-mail
-                  <input
-                    value={clientDraft.email}
-                    onChange={(e) =>
-                      setClientDraft({ ...clientDraft, email: e.target.value })
-                    }
-                  />
-                </label>
-                <label>
-                  Contato
-                  <input
-                    value={clientDraft.contact}
-                    onChange={(e) =>
-                      setClientDraft({
-                        ...clientDraft,
-                        contact: e.target.value,
-                      })
-                    }
-                  />
-                </label>
-                <label className="wide">
-                  Endereço
-                  <input
-                    value={clientDraft.address}
-                    onChange={(e) =>
-                      setClientDraft({
-                        ...clientDraft,
-                        address: e.target.value,
-                      })
-                    }
-                  />
-                </label>
-                <label>
-                  Cidade
-                  <input
-                    value={clientDraft.city}
-                    onChange={(e) =>
-                      setClientDraft({ ...clientDraft, city: e.target.value })
-                    }
-                  />
-                </label>
-                <label>
-                  UF
-                  <input
-                    maxLength={2}
-                    value={clientDraft.state}
-                    onChange={(e) =>
-                      setClientDraft({
-                        ...clientDraft,
-                        state: e.target.value.toUpperCase(),
-                      })
-                    }
-                  />
-                </label>
-                <label>
-                  CEP
-                  <input
-                    value={clientDraft.cep}
-                    onChange={(e) =>
-                      setClientDraft({ ...clientDraft, cep: e.target.value })
-                    }
-                  />
-                </label>
+                <label className="wide">Nome / Razão social<input value={clientDraft.name} onChange={(e) => setClientDraft({ ...clientDraft, name: e.target.value })} /></label>
+                <label>CPF / CNPJ<input value={clientDraft.document} onChange={(e) => setClientDraft({ ...clientDraft, document: e.target.value })} /></label>
+                <label>Telefone<input value={clientDraft.phone} onChange={(e) => setClientDraft({ ...clientDraft, phone: e.target.value })} /></label>
+                <label>E-mail<input value={clientDraft.email} onChange={(e) => setClientDraft({ ...clientDraft, email: e.target.value })} /></label>
+                <label>Contato<input value={clientDraft.contact} onChange={(e) => setClientDraft({ ...clientDraft, contact: e.target.value })} /></label>
+                <label className="wide">Endereço<input value={clientDraft.address} onChange={(e) => setClientDraft({ ...clientDraft, address: e.target.value })} /></label>
+                <label>Cidade<input value={clientDraft.city} onChange={(e) => setClientDraft({ ...clientDraft, city: e.target.value })} /></label>
+                <label>UF<input maxLength={2} value={clientDraft.state} onChange={(e) => setClientDraft({ ...clientDraft, state: e.target.value.toUpperCase() })} /></label>
+                <label>CEP<input value={clientDraft.cep} onChange={(e) => setClientDraft({ ...clientDraft, cep: e.target.value })} /></label>
               </div>
-              <button
-                className="button primary registry-save"
-                onClick={registerClient}
-              >
-                Salvar cliente
-              </button>
+              <button className="button primary registry-save" onClick={registerClient}>Salvar cliente</button>
             </div>
             <div className="card registry-list">
               <h2>Clientes cadastrados</h2>
-              {clients.map((client) => (
-                <div className="registry-row" key={client.id}>
-                  <div>
-                    <strong>{client.name}</strong>
-                    <small>
-                      {client.document || "Sem documento"} ·{" "}
-                      {client.phone || "Sem telefone"}
-                    </small>
-                  </div>
-                  <button onClick={() => setClientDraft(client)}>Editar</button>
-                </div>
-              ))}
-              {!clients.length && (
-                <p className="registry-empty">Nenhum cliente cadastrado.</p>
-              )}
+              {clients.map((client) => <div className="registry-row" key={client.id}><div><strong>{client.name}</strong><small>{client.document || "Sem documento"} · {client.phone || "Sem telefone"}</small></div><button onClick={() => setClientDraft(client)}>Editar</button></div>)}
+              {!clients.length && <p className="registry-empty">Nenhum cliente cadastrado.</p>}
             </div>
           </section>
         )}
@@ -1278,153 +944,24 @@ export function BudgetApplication() {
         {tab === "services" && (
           <section className="registry-layout">
             <div className="card registry-form">
-              <div className="section-title">
-                <span>02</span>
-                <div>
-                  <h2>Cadastro de serviço</h2>
-                  <p>Esta tabela será ligada aos IDs do backend</p>
-                </div>
-              </div>
+              <div className="section-title"><span>02</span><div><h2>Cadastro de serviço</h2><p>Esta tabela será ligada aos IDs do backend</p></div></div>
               <div className="form-grid">
-                <label>
-                  Código
-                  <input
-                    placeholder="Ex.: SRV-001"
-                    value={serviceDraft.code}
-                    onChange={(e) =>
-                      setServiceDraft({
-                        ...serviceDraft,
-                        code: e.target.value.toUpperCase(),
-                      })
-                    }
-                  />
-                </label>
-                <label className="wide">
-                  Serviço
-                  <input
-                    value={serviceDraft.description}
-                    onChange={(e) =>
-                      setServiceDraft({
-                        ...serviceDraft,
-                        description: e.target.value,
-                      })
-                    }
-                  />
-                </label>
-                <label>
-                  Unidade
-                  <select
-                    value={serviceDraft.unit}
-                    onChange={(e) =>
-                      setServiceDraft({ ...serviceDraft, unit: e.target.value })
-                    }
-                  >
-                    <option>serv.</option>
-                    <option>un.</option>
-                    <option>h</option>
-                    <option>m</option>
-                    <option>kg</option>
-                  </select>
-                </label>
-                <label>
-                  Valor
-                  <input
-                    type="number"
-                    min="0"
-                    step=".01"
-                    value={serviceDraft.unitPrice || ""}
-                    onChange={(e) =>
-                      setServiceDraft({
-                        ...serviceDraft,
-                        unitPrice: Number(e.target.value),
-                      })
-                    }
-                  />
-                </label>
+                <label>Código<input placeholder="Ex.: SRV-001" value={serviceDraft.code} onChange={(e) => setServiceDraft({ ...serviceDraft, code: e.target.value.toUpperCase() })} /></label>
+                <label className="wide">Serviço<input value={serviceDraft.description} onChange={(e) => setServiceDraft({ ...serviceDraft, description: e.target.value })} /></label>
+                <label>Unidade<select value={serviceDraft.unit} onChange={(e) => setServiceDraft({ ...serviceDraft, unit: e.target.value })}><option>serv.</option><option>un.</option><option>h</option><option>m</option><option>kg</option></select></label>
+                <label>Valor<input type="number" min="0" step=".01" value={serviceDraft.unitPrice || ""} onChange={(e) => setServiceDraft({ ...serviceDraft, unitPrice: Number(e.target.value) })} /></label>
               </div>
-              <button
-                className="button primary registry-save"
-                onClick={registerService}
-              >
-                Salvar serviço
-              </button>
+              <button className="button primary registry-save" onClick={registerService}>Salvar serviço</button>
             </div>
             <div className="card registry-list">
-              <div className="registry-title">
-                <h2>Planilha de serviços</h2>
-                <div className="registry-actions">
-                  <button
-                    className="button ghost"
-                    disabled={!services.length}
-                    onClick={downloadServicesPdf}
-                  >
-                    ↧ Gerar PDF
-                  </button>
-                  <button
-                    className="button soft"
-                    onClick={() => {
-                      setServiceDraft({
-                        id: "",
-                        code: "",
-                        description: "",
-                        unit: "serv.",
-                        unitPrice: 0,
-                      });
-                      document
-                        .getElementById("service-form")
-                        ?.scrollIntoView({ behavior: "smooth" });
-                    }}
-                  >
-                    ＋ Adicionar serviço
-                  </button>
-                </div>
-              </div>
+              <div className="registry-title"><h2>Planilha de serviços</h2><div className="registry-actions"><button className="button ghost" disabled={!services.length} onClick={downloadServicesPdf}>↧ Gerar PDF</button><button className="button soft" onClick={() => { setServiceDraft({ id: "", code: "", description: "", unit: "serv.", unitPrice: 0 }); document.getElementById("service-form")?.scrollIntoView({ behavior: "smooth" }); }}>＋ Adicionar serviço</button></div></div>
               <div id="service-pdf" className="services-paper">
-                <div className="services-paper-head">
-                  <img src="/MG.jpg" alt="MG Refrigeração" />
-                  <div>
-                    <h2>PLANILHA DE SERVIÇOS</h2>
-                    <p>
-                      MG Refrigeração · Emitida em{" "}
-                      {new Date().toLocaleDateString("pt-BR")}
-                    </p>
-                  </div>
-                </div>
-                <div className="service-head pdf-service-head">
-                  <span>Código</span>
-                  <span>Serviço</span>
-                  <span>Unidade</span>
-                  <span>Valor</span>
-                  <span className="service-actions-label">Ações</span>
-                </div>
-                {services.map((service) => (
-                  <div className="service-row pdf-service-row" key={service.id}>
-                    <code>{service.code}</code>
-                    <div>
-                      <strong>{service.description}</strong>
-                    </div>
-                    <span>{service.unit}</span>
-                    <b>{money(service.unitPrice)}</b>
-                    <div className="service-actions">
-                      <button onClick={() => setServiceDraft(service)}>
-                        Editar
-                      </button>
-                      <button
-                        className="delete-service"
-                        onClick={() => removeService(service)}
-                      >
-                        Excluir
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                <div className="services-paper-head"><img src="/MG.jpg" alt="MG Refrigeração" /><div><h2>PLANILHA DE SERVIÇOS</h2><p>MG Refrigeração · Emitida em {new Date().toLocaleDateString("pt-BR")}</p></div></div>
+                <div className="service-head pdf-service-head"><span>Código</span><span>Serviço</span><span>Unidade</span><span>Valor</span><span className="service-actions-label">Ações</span></div>
+                {services.map((service) => <div className="service-row pdf-service-row" key={service.id}><code>{service.code}</code><div><strong>{service.description}</strong></div><span>{service.unit}</span><b>{money(service.unitPrice)}</b><div className="service-actions"><button onClick={() => setServiceDraft(service)}>Editar</button><button className="delete-service" onClick={() => removeService(service)}>Excluir</button></div></div>)}
                 <footer>{services.length} serviço(s) cadastrado(s)</footer>
               </div>
-              {!services.length && (
-                <p className="registry-empty">
-                  Cadastre um serviço para usar o preenchimento automático.
-                </p>
-              )}
+              {!services.length && <p className="registry-empty">Cadastre um serviço para usar o preenchimento automático.</p>}
             </div>
           </section>
         )}
@@ -1432,29 +969,12 @@ export function BudgetApplication() {
         {tab === "splits" && (
           <section className="card split-card">
             <div className="split-summary">
-              <div>
-                <span>Percentual do split</span>
-                <strong>{SPLIT_RATE * 100}%</strong>
-              </div>
-              <div>
-                <span>Orçamentos com split</span>
-                <strong>{splitBudgets.length}</strong>
-              </div>
-              <div>
-                <span>Splits pagos</span>
-                <strong>{paidSplitCount}</strong>
-              </div>
-              <div className="split-total">
-                <span>Total pendente dos splits</span>
-                <strong>{money(pendingSplitTotal)}</strong>
-                <small>Gerado: {money(splitTotal)}</small>
-              </div>
+              <div><span>Percentual do split</span><strong>{SPLIT_RATE * 100}%</strong></div>
+              <div><span>Orçamentos com split</span><strong>{splitBudgets.length}</strong></div>
+              <div><span>Splits pagos</span><strong>{paidSplitCount}</strong></div>
+              <div className="split-total"><span>Total pendente dos splits</span><strong>{money(pendingSplitTotal)}</strong><small>Gerado: {money(splitTotal)}</small></div>
             </div>
-            <div className="split-info">
-              Orçamentos aprovados ou pagos geram split. O status Pago do
-              orçamento é independente: somente o botão Marcar como pago quita o
-              split e abate seu valor do total pendente.
-            </div>
+            <div className="split-info">Orçamentos aprovados ou pagos geram split. O status Pago do orçamento é independente: somente o botão Marcar como pago quita o split e abate seu valor do total pendente.</div>
             <div className="saved-toolbar split-toolbar">
               <div className="search">
                 <span>⌕</span>
@@ -1481,58 +1001,25 @@ export function BudgetApplication() {
               <span>{filteredSplitBudgets.length} resultado(s)</span>
             </div>
             <div className="split-table">
-              <div className="split-head">
-                <span>Orçamento</span>
-                <span>Cliente</span>
-                <span>Status</span>
-                <span>Valor aprovado</span>
-                <span>Split (5%)</span>
-                <span>Pagamento</span>
-                <span>Ação</span>
-              </div>
+              <div className="split-head"><span>Orçamento</span><span>Cliente</span><span>Status</span><span>Valor aprovado</span><span>Split (5%)</span><span>Pagamento</span><span>Ação</span></div>
               {visibleSplitBudgets.map((item) => (
                 <div className="split-row" key={item.id}>
                   <strong>{item.number}</strong>
-                  <div>
-                    <b>{item.client.name || "Cliente não informado"}</b>
-                    <small>
-                      {new Date(`${item.issuedAt}T12:00:00`).toLocaleDateString(
-                        "pt-BR",
-                      )}
-                    </small>
-                  </div>
-                  <em className={`status ${item.status.toLowerCase()}`}>
-                    {item.status}
-                  </em>
+                  <div><b>{item.client.name || "Cliente não informado"}</b><small>{new Date(`${item.issuedAt}T12:00:00`).toLocaleDateString("pt-BR")}</small></div>
+                  <em className={`status ${item.status.toLowerCase()}`}>{item.status}</em>
                   <span>{money(calculateBudgetTotal(item))}</span>
                   <strong>{money(calculateBudgetSplit(item))}</strong>
-                  <em
-                    className={`split-payment ${item.splitPaidAt ? "paid" : "pending"}`}
-                  >
-                    {item.splitPaidAt ? "Pago" : "Pendente"}
-                  </em>
+                  <em className={`split-payment ${item.splitPaidAt ? "paid" : "pending"}`}>{item.splitPaidAt ? "Pago" : "Pendente"}</em>
                   <div className="split-actions">
                     {item.splitPaidAt ? (
-                      <small>
-                        Pago em{" "}
-                        {new Date(item.splitPaidAt).toLocaleDateString("pt-BR")}
-                      </small>
+                      <small>Pago em {new Date(item.splitPaidAt).toLocaleDateString("pt-BR")}</small>
                     ) : (
-                      <button
-                        className="button split-pay-button"
-                        onClick={() => paySplit(item)}
-                      >
-                        Marcar como pago
-                      </button>
+                      <button className="button split-pay-button" onClick={() => paySplit(item)}>Marcar como pago</button>
                     )}
                     <button
                       className="delete-action split-delete-button"
                       disabled={!item.splitPaidAt}
-                      title={
-                        item.splitPaidAt
-                          ? "Excluir orçamento do Supabase"
-                          : "Marque o split como pago antes de excluir"
-                      }
+                      title={item.splitPaidAt ? "Excluir orçamento do Supabase" : "Marque o split como pago antes de excluir"}
                       onClick={() => removeBudget(item)}
                     >
                       Excluir
@@ -1540,44 +1027,13 @@ export function BudgetApplication() {
                   </div>
                 </div>
               ))}
-              {!filteredSplitBudgets.length && (
-                <div className="empty-history">
-                  <strong>
-                    {splitSearch
-                      ? "Nenhum split encontrado"
-                      : "Nenhum split calculado"}
-                  </strong>
-                  <span>
-                    {splitSearch
-                      ? "Tente pesquisar por outro cliente ou número de orçamento."
-                      : "O valor aparecerá quando um orçamento for aprovado."}
-                  </span>
-                </div>
-              )}
+              {!filteredSplitBudgets.length && <div className="empty-history"><strong>{splitSearch ? "Nenhum split encontrado" : "Nenhum split calculado"}</strong><span>{splitSearch ? "Tente pesquisar por outro cliente ou número de orçamento." : "O valor aparecerá quando um orçamento for aprovado."}</span></div>}
             </div>
             {filteredSplitBudgets.length > 10 && (
               <div className="load-controls">
-                <span>
-                  Exibindo{" "}
-                  {Math.min(splitVisibleCount, filteredSplitBudgets.length)} de{" "}
-                  {filteredSplitBudgets.length}
-                </span>
-                {splitVisibleCount > 10 && (
-                  <button
-                    className="button ghost"
-                    onClick={() => setSplitVisibleCount(10)}
-                  >
-                    ← Voltar para 10
-                  </button>
-                )}
-                {splitVisibleCount < filteredSplitBudgets.length && (
-                  <button
-                    className="button primary"
-                    onClick={() => setSplitVisibleCount((count) => count + 5)}
-                  >
-                    Carregar mais 5
-                  </button>
-                )}
+                <span>Exibindo {Math.min(splitVisibleCount, filteredSplitBudgets.length)} de {filteredSplitBudgets.length}</span>
+                {splitVisibleCount > 10 && <button className="button ghost" onClick={() => setSplitVisibleCount(10)}>← Voltar para 10</button>}
+                {splitVisibleCount < filteredSplitBudgets.length && <button className="button primary" onClick={() => setSplitVisibleCount((count) => count + 5)}>Carregar mais 5</button>}
               </div>
             )}
           </section>

@@ -1130,3 +1130,119 @@ textarea {
     page-break-inside: avoid;
   }
 }
+
+/* Movimento suave da interface */
+@keyframes screen-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes toast-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.workspace > .editor,
+.workspace > .preview-area,
+.workspace > .saved-card,
+.workspace > .registry-layout,
+.workspace > .split-card,
+.workspace > .settings-layout {
+  animation: screen-enter 260ms ease-out both;
+}
+
+.topbar h1,
+.topbar p,
+.top-actions {
+  transition: color 180ms ease, opacity 180ms ease, transform 180ms ease;
+}
+
+button,
+.button,
+input,
+select,
+textarea,
+.card,
+.sidebar nav button,
+.saved-row,
+.split-row,
+.service-row,
+.client-row {
+  transition:
+    color 180ms ease,
+    background-color 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    opacity 180ms ease,
+    transform 180ms ease;
+}
+
+button:not(:disabled):active,
+.button:not(:disabled):active {
+  transform: scale(0.98);
+}
+
+.button:not(:disabled):hover,
+.sidebar-card button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 7px 18px rgba(24, 54, 112, 0.12);
+}
+
+.sidebar nav button:hover {
+  transform: translateX(3px);
+}
+
+.sidebar nav button.active {
+  box-shadow: 0 7px 20px rgba(32, 77, 154, 0.15);
+}
+
+input:hover,
+select:hover,
+textarea:hover {
+  border-color: #aebbd1;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  transform: translateY(-1px);
+  box-shadow: 0 0 0 3px rgba(37, 82, 164, 0.1);
+}
+
+.saved-row:hover,
+.split-row:hover,
+.service-row:hover,
+.client-row:hover {
+  background: #fafcff;
+}
+
+.card:hover {
+  border-color: #d8dfeb;
+}
+
+.toast {
+  animation: toast-enter 220ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
