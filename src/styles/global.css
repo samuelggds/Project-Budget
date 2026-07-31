@@ -771,10 +771,15 @@ textarea {
 .split-payment.paid { background: #dcf6ea; color: var(--green); }
 .split-payment.pending { background: #fff2d9; color: #a36000; }
 .split-pay-button { padding: 8px 9px; color: var(--blue); }
+.load-controls { display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-top: 16px; }
+.load-controls > span { margin-right: auto; color: var(--muted); font-size: 11px; }
+.load-controls .button { padding: 9px 12px; }
 @media (max-width: 720px) {
   .split-summary { grid-template-columns: 1fr; }
   .split-table { overflow-x: auto; }
   .split-head, .split-row { min-width: 760px; }
+  .load-controls { align-items: stretch; flex-direction: column; }
+  .load-controls > span { margin: 0 0 3px; }
 }
 .empty-history {
   display: grid;

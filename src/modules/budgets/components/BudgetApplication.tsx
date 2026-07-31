@@ -11,8 +11,6 @@ import {
 } from "../services/budgetCalculations";
 import {
   filterBudgets,
-  HISTORY_PAGE_SIZE,
-  paginateBudgets,
 } from "../../history/services/filterBudgets";
 import { createBudgetPdf, downloadPdfBlob } from "../../pdf/services/budgetPdf";
 import type { Client } from "../../clients/types/Client";
@@ -30,7 +28,8 @@ export function BudgetApplication() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("Todos");
   const [periodFilter, setPeriodFilter] = useState("Todos");
-  const [page, setPage] = useState(1);
+  const [historyVisibleCount, setHistoryVisibleCount] = useState(10);
+  const [splitVisibleCount, setSplitVisibleCount] = useState(10);
   const [toast, setToast] = useState("");
   const [clients, setClients] = useState<Client[]>([]);
   const [services, setServices] = useState<Service[]>([]);
@@ -45,9 +44,9 @@ export function BudgetApplication() {
     status: statusFilter,
     period: periodFilter,
   });
-  const pageCount = Math.max(1, Math.ceil(filtered.length / HISTORY_PAGE_SIZE));
-  const visibleBudgets = paginateBudgets(filtered, page);
+  const visibleBudgets = filtered.slice(0, historyVisibleCount);
   const splitBudgets = saved.filter(hasSplit);
+  const visibleSplitBudgets = splitBudgets.slice(0, splitVisibleCount);
   const splitTotal = calculateAllSplits(saved);
   const pendingSplitTotal = calculatePendingSplits(saved);
   const paidSplitCount = splitBudgets.filter((item) => item.splitPaidAt).length;
@@ -209,7 +208,6 @@ export function BudgetApplication() {
       await deleteBudgetFromDatabase(item.id);
       const next = saved.filter((savedItem) => savedItem.id !== item.id);
       setSaved(next); await deletePdf(item.id);
-      if (visibleBudgets.length === 1 && page > 1) setPage(page - 1);
       notify("Orçamento e PDF excluídos");
     } catch (error) { notify(`Erro: ${(error as Error).message}`); }
   };
@@ -247,7 +245,7 @@ export function BudgetApplication() {
     setSearch("");
     setStatusFilter("Todos");
     setPeriodFilter("Todos");
-    setPage(1);
+    setHistoryVisibleCount(10);
   };
 
   if (databaseLoading) return <div className="auth-loading"><img src="/MG.jpg" alt="MG" /><span>Carregando dados do banco...</span></div>;
@@ -794,7 +792,7 @@ export function BudgetApplication() {
                   value={search}
                   onChange={(e) => {
                     setSearch(e.target.value);
-                    setPage(1);
+                    setHistoryVisibleCount(10);
                   }}
                 />
               </div>
@@ -803,7 +801,7 @@ export function BudgetApplication() {
                 value={statusFilter}
                 onChange={(e) => {
                   setStatusFilter(e.target.value);
-                  setPage(1);
+                  setHistoryVisibleCount(10);
                 }}
               >
                 <option>Todos</option>
@@ -818,7 +816,7 @@ export function BudgetApplication() {
                 value={periodFilter}
                 onChange={(e) => {
                   setPeriodFilter(e.target.value);
-                  setPage(1);
+                  setHistoryVisibleCount(10);
                 }}
               >
                 <option value="Todos">Todo o período</option>
@@ -892,20 +890,11 @@ export function BudgetApplication() {
                 </div>
               )}
             </div>
-            {filtered.length > HISTORY_PAGE_SIZE && (
-              <div className="pagination">
-                <button disabled={page === 1} onClick={() => setPage(page - 1)}>
-                  ← Anterior
-                </button>
-                <span>
-                  Página {page} de {pageCount}
-                </span>
-                <button
-                  disabled={page === pageCount}
-                  onClick={() => setPage(page + 1)}
-                >
-                  Próxima →
-                </button>
+            {filtered.length > 10 && (
+              <div className="load-controls">
+                <span>Exibindo {Math.min(historyVisibleCount, filtered.length)} de {filtered.length}</span>
+                {historyVisibleCount > 10 && <button className="button ghost" onClick={() => setHistoryVisibleCount(10)}>← Voltar para 10</button>}
+                {historyVisibleCount < filtered.length && <button className="button primary" onClick={() => setHistoryVisibleCount((count) => count + 5)}>Carregar mais 5</button>}
               </div>
             )}
           </section>
@@ -972,7 +961,7 @@ export function BudgetApplication() {
             <div className="split-info">Orçamentos aprovados ou pagos geram split. O status Pago do orçamento é independente: somente o botão Marcar como pago quita o split e abate seu valor do total pendente.</div>
             <div className="split-table">
               <div className="split-head"><span>Orçamento</span><span>Cliente</span><span>Status</span><span>Valor aprovado</span><span>Split (5%)</span><span>Pagamento</span><span>Ação</span></div>
-              {splitBudgets.map((item) => (
+              {visibleSplitBudgets.map((item) => (
                 <div className="split-row" key={item.id}>
                   <strong>{item.number}</strong>
                   <div><b>{item.client.name || "Cliente não informado"}</b><small>{new Date(`${item.issuedAt}T12:00:00`).toLocaleDateString("pt-BR")}</small></div>
@@ -985,6 +974,13 @@ export function BudgetApplication() {
               ))}
               {!splitBudgets.length && <div className="empty-history"><strong>Nenhum split calculado</strong><span>O valor aparecerá quando um orçamento for aprovado.</span></div>}
             </div>
+            {splitBudgets.length > 10 && (
+              <div className="load-controls">
+                <span>Exibindo {Math.min(splitVisibleCount, splitBudgets.length)} de {splitBudgets.length}</span>
+                {splitVisibleCount > 10 && <button className="button ghost" onClick={() => setSplitVisibleCount(10)}>← Voltar para 10</button>}
+                {splitVisibleCount < splitBudgets.length && <button className="button primary" onClick={() => setSplitVisibleCount((count) => count + 5)}>Carregar mais 5</button>}
+              </div>
+            )}
           </section>
         )}
 
