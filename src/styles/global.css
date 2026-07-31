@@ -1113,6 +1113,311 @@ textarea {
     overflow: hidden;
   }
 }
+
+/* Layout completo para celulares */
+@media (max-width: 720px) {
+  html,
+  body,
+  #root,
+  .app-shell {
+    width: 100%;
+    min-width: 0;
+    min-height: 100%;
+  }
+
+  body {
+    overflow-x: hidden;
+  }
+
+  .app-shell {
+    display: block;
+  }
+
+  .sidebar {
+    display: block;
+    position: fixed;
+    inset: auto 0 0;
+    width: 100%;
+    height: auto;
+    padding: 6px 7px calc(6px + env(safe-area-inset-bottom));
+    background: linear-gradient(90deg, #0e285c, #081a3b);
+    box-shadow: 0 -8px 26px rgba(8, 26, 59, 0.18);
+    overflow: hidden;
+    z-index: 50;
+  }
+
+  .sidebar .brand,
+  .sidebar .sidebar-card,
+  .sidebar .profile {
+    display: none;
+  }
+
+  .sidebar nav {
+    display: flex;
+    gap: 4px;
+    width: 100%;
+    margin: 0;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+
+  .sidebar nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .sidebar nav button,
+  .sidebar nav button:not(.active) {
+    flex: 1 0 68px;
+    min-height: 54px;
+    padding: 6px 5px;
+    border-radius: 9px;
+    justify-content: center;
+    flex-direction: column;
+    gap: 3px;
+    text-align: center;
+    font-size: 9px;
+    line-height: 1.15;
+  }
+
+  .sidebar nav button i {
+    width: auto;
+    font-size: 17px;
+    line-height: 1;
+  }
+
+  .sidebar nav button:hover {
+    transform: none;
+  }
+
+  .workspace {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    margin: 0;
+    padding: 18px 12px calc(88px + env(safe-area-inset-bottom));
+  }
+
+  .topbar {
+    width: 100%;
+    max-width: 100%;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  .topbar h1 {
+    font-size: clamp(23px, 7vw, 29px);
+    overflow-wrap: anywhere;
+  }
+
+  .topbar p {
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .editor,
+  .preview-area,
+  .saved-card,
+  .registry-layout,
+  .split-card,
+  .settings-layout,
+  .budget-bottom-actions {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .card {
+    max-width: 100%;
+    padding: 17px 14px;
+    border-radius: 12px;
+  }
+
+  .section-title {
+    align-items: flex-start;
+    margin-bottom: 17px;
+  }
+
+  .section-title > span {
+    flex: 0 0 36px;
+    width: 36px;
+    height: 36px;
+  }
+
+  .section-title h2,
+  .section-title p,
+  .registry-title h2 {
+    overflow-wrap: anywhere;
+  }
+
+  input,
+  select,
+  textarea {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  textarea {
+    min-height: 105px;
+  }
+
+  .button {
+    min-height: 44px;
+  }
+
+  .section-heading,
+  .registry-title {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .section-heading .button,
+  .registry-actions,
+  .registry-actions .button,
+  .registry-save,
+  .status-actions .button {
+    width: 100%;
+  }
+
+  .registry-actions,
+  .status-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .item-row {
+    width: 100%;
+    min-width: 0;
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .description-field,
+  .money-input {
+    min-width: 0;
+  }
+
+  .history-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .history-summary p {
+    grid-column: auto;
+  }
+
+  .saved-card {
+    overflow: hidden;
+  }
+
+  .saved-table,
+  .split-table,
+  .services-paper {
+    width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .saved-head,
+  .saved-row {
+    min-width: 900px;
+  }
+
+  .split-head,
+  .split-row {
+    min-width: 790px;
+  }
+
+  .service-head,
+  .service-row {
+    min-width: 660px;
+  }
+
+  .services-paper-head {
+    min-width: 0;
+  }
+
+  .split-summary {
+    gap: 9px;
+  }
+
+  .split-summary > div {
+    padding: 15px;
+  }
+
+  .settings-menu {
+    display: flex;
+    width: 100%;
+    padding: 7px;
+    overflow-x: auto;
+  }
+
+  .settings-menu button {
+    flex: 1 0 auto;
+    white-space: nowrap;
+    text-align: center;
+  }
+
+  .preview-area {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+  }
+
+  .paper {
+    transform-origin: top left;
+  }
+
+  .budget-bottom-actions {
+    margin-top: 14px;
+  }
+
+  .budget-bottom-actions .button {
+    width: 100%;
+  }
+
+  .toast {
+    right: 12px;
+    bottom: calc(78px + env(safe-area-inset-bottom));
+    left: 12px;
+    width: auto;
+    text-align: center;
+  }
+
+  .login-page,
+  .database-error-page {
+    padding: 14px;
+  }
+
+  .login-card {
+    padding: 22px 18px;
+    border-radius: 15px;
+  }
+}
+
+@media (max-width: 400px) {
+  .workspace {
+    padding-right: 9px;
+    padding-left: 9px;
+  }
+
+  .card {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  .paper {
+    transform: scale(0.43);
+    margin-bottom: -169mm;
+  }
+}
+
+@media (max-width: 350px) {
+  .paper {
+    transform: scale(0.37);
+    margin-bottom: -187mm;
+  }
+}
 @media print {
   body {
     background: #fff;
