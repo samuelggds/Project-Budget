@@ -1,0 +1,9 @@
+{
+  "name": "mg-orcamentos",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": { "dev": "vite", "build": "tsc -b && vite build", "preview": "vite preview" },
+  "dependencies": { "@supabase/supabase-js": "^2.57.4", "@vitejs/plugin-react": "latest", "html2pdf.js": "^0.12.1", "vite": "latest", "typescript": "latest", "react": "latest", "react-dom": "latest" },
+  "devDependencies": { "@types/react": "latest", "@types/react-dom": "latest" }
+}
