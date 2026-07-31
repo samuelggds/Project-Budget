@@ -349,19 +349,6 @@ export function BudgetApplication() {
                 : "Personalize os dados exibidos nos orçamentos."}
             </p>
           </div>
-          {tab === "new" && (
-            <div className="top-actions">
-              <button
-                className="button ghost"
-                onClick={() => setPreview(!preview)}
-              >
-                {preview ? "← Editar" : "◉ Visualizar"}
-              </button>
-              <button className="button primary" onClick={saveBudget}>
-                ✓ Salvar orçamento
-              </button>
-            </div>
-          )}
           {tab === "saved" && (
             <button className="button primary" onClick={newBudget}>
               ＋ Novo orçamento
@@ -664,14 +651,6 @@ export function BudgetApplication() {
 
         {tab === "new" && preview && (
           <div className="preview-area">
-            <div className="preview-tools">
-              <span>
-                Prévia em formato A4 · o PDF também ficará guardado no histórico
-              </span>
-              <button className="button primary" onClick={generateAndStorePdf}>
-                ↧ Salvar e baixar PDF
-              </button>
-            </div>
             <article
               id="budget-pdf"
               className={`paper ${budget.items.length > 12 ? "paper-ultra" : budget.items.length > 7 ? "paper-dense" : ""}`}
@@ -779,6 +758,26 @@ export function BudgetApplication() {
                 qualquer dúvida.
               </footer>
             </article>
+          </div>
+        )}
+
+        {tab === "new" && (
+          <div className="budget-bottom-actions card">
+            <div>
+              <strong>{preview ? "Pré-visualização do orçamento" : "Orçamento pronto?"}</strong>
+              <span>{preview ? "Confira o documento antes de salvar ou baixar o PDF." : "Visualize o documento ou salve os dados no Supabase."}</span>
+            </div>
+            <button className="button ghost" onClick={() => setPreview(!preview)}>
+              {preview ? "← Voltar para edição" : "◉ Visualizar"}
+            </button>
+            <button className="button primary" onClick={saveBudget}>
+              ✓ Salvar orçamento
+            </button>
+            {preview && (
+              <button className="button primary" onClick={generateAndStorePdf}>
+                ↧ Salvar e baixar PDF
+              </button>
+            )}
           </div>
         )}
 

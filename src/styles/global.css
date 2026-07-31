@@ -1170,6 +1170,42 @@ textarea {
   animation: screen-enter 260ms ease-out both;
 }
 
+.budget-bottom-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+  padding: 16px 18px;
+}
+
+.budget-bottom-actions > div {
+  display: grid;
+  gap: 4px;
+  margin-right: auto;
+}
+
+.budget-bottom-actions > div strong {
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.budget-bottom-actions > div span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+@media (max-width: 720px) {
+  .budget-bottom-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .budget-bottom-actions > div {
+    margin: 0 0 5px;
+  }
+}
+
 .topbar h1,
 .topbar p,
 .top-actions {
