@@ -16,7 +16,7 @@ export const emptyClient = {
 export function createInitialBudget(): Budget {
   return {
     id: crypto.randomUUID(),
-    number: "ORC-1029",
+    number: "ORC-01",
     issuedAt: new Date().toISOString().slice(0, 10),
     validDays: 5,
     status: "Enviado",
@@ -41,8 +41,16 @@ export function createInitialBudget(): Budget {
 
 export function createNextBudget(saved: Budget[]): Budget {
   const highest = Math.max(
-    1028,
-    ...saved.map((budget) => Number(budget.number.replace(/\D/g, "")) || 0),
+    0,
+    ...saved.map((budget) => {
+      const match = budget.number.match(/^ORC-(\d+)$/i);
+      return match ? Math.max(0, Number.parseInt(match[1], 10)) : 0;
+    }),
   );
-  return { ...createInitialBudget(), number: `ORC-${highest + 1}` };
+  const nextNumber = Math.max(1, highest + 1);
+
+  return {
+    ...createInitialBudget(),
+    number: `ORC-${String(nextNumber).padStart(2, "0")}`,
+  };
 }

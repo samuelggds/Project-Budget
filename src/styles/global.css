@@ -322,6 +322,13 @@ textarea:focus {
   border-color: #7392df;
   box-shadow: 0 0 0 3px #214cb50d;
 }
+
+input[readonly] {
+  background: #f5f7fb;
+  color: var(--blue);
+  font-weight: 800;
+  cursor: default;
+}
 textarea {
   resize: vertical;
 }

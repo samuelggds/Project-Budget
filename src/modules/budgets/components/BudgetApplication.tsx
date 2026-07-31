@@ -384,9 +384,9 @@ export function BudgetApplication() {
                   Número do orçamento
                   <input
                     value={budget.number}
-                    onChange={(e) =>
-                      setBudget({ ...budget, number: e.target.value })
-                    }
+                    readOnly
+                    aria-readonly="true"
+                    title="Número gerado automaticamente"
                   />
                 </label>
                 <label>
