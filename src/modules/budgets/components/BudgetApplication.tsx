@@ -614,7 +614,7 @@ export function BudgetApplication() {
                 <label>
                   Condição de pagamento
                   <select
-                    value={["Depósito", "PIX", "Boleto"].includes(budget.payment) ? budget.payment : ""}
+                    value={["Depósito", "PIX", "Boleto", "Transferência"].includes(budget.payment) ? budget.payment : ""}
                     onChange={(e) =>
                       setBudget({ ...budget, payment: e.target.value })
                     }
@@ -623,6 +623,7 @@ export function BudgetApplication() {
                     <option value="Depósito">Depósito</option>
                     <option value="PIX">PIX</option>
                     <option value="Boleto">Boleto</option>
+                    <option value="Transferência">Transferência</option>
                   </select>
                 </label>
                 <label>
