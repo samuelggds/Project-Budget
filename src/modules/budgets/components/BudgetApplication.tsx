@@ -256,7 +256,7 @@ export function BudgetApplication() {
         <nav>
           <button
             className={tab === "new" ? "active" : ""}
-            onClick={() => setTab("new")}
+            onClick={newBudget}
           >
             <i>＋</i>Novo orçamento
           </button>
