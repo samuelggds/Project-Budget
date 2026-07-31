@@ -32,4 +32,4 @@ Os PDFs continuam guardados no navegador via IndexedDB. Os registros e cálculos
 
 ## Split
 
-O frontend calcula 5% sobre os orçamentos com status `Aprovado` ou `Pago`. O status `Pago` preserva o split porque representa um orçamento que já passou pela aprovação. `Recusado`, `Enviado` e `Em andamento` não entram no cálculo. Repita essa regra no backend usando valores monetários decimais, nunca `float`.
+O frontend calcula 5% sobre orçamentos `Aprovado` ou `Pago`. O status `Pago` do orçamento não quita o split. O pagamento do split é controlado separadamente em `budgets.split_paid_at`: somente o botão manual da aba Splits abate o valor do total pendente. Execute `supabase/split-payment-migration.sql` uma vez no SQL Editor antes de usar essa versão.

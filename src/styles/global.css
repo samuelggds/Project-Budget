@@ -750,7 +750,7 @@ textarea {
 .services-paper.is-exporting .service-actions, .services-paper.is-exporting .service-actions-label { display: none; }
 .services-paper footer { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 10px; text-align: right; color: var(--muted); font-size: 10px; }
 .split-card { max-width: 1320px; margin: auto; }
-.split-summary { display: grid; grid-template-columns: 1fr 1fr 1.35fr; gap: 14px; margin-bottom: 14px; }
+.split-summary { display: grid; grid-template-columns: .8fr 1fr 1fr 1.35fr; gap: 14px; margin-bottom: 14px; }
 .split-summary > div { padding: 18px; border: 1px solid #dce5f7; border-radius: 11px; background: #f6f9ff; }
 .split-summary span, .split-summary strong { display: block; }
 .split-summary span { color: var(--muted); font-size: 11px; margin-bottom: 7px; }
@@ -758,14 +758,19 @@ textarea {
 .split-summary .split-total { background: var(--navy); border-color: var(--navy); }
 .split-summary .split-total span { color: #becae2; }
 .split-summary .split-total strong { color: #fff; }
+.split-summary .split-total small { color: #aebcda; display: block; margin-top: 6px; font-size: 10px; }
 .split-info { padding: 11px 14px; margin-bottom: 16px; border-radius: 8px; background: #eef3ff; color: #425578; font-size: 11px; }
 .split-table { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
-.split-head, .split-row { display: grid; grid-template-columns: 115px minmax(190px, 1fr) 120px 150px 150px; gap: 12px; align-items: center; padding: 14px 16px; }
+.split-head, .split-row { display: grid; grid-template-columns: 100px minmax(170px, 1fr) 100px 125px 115px 90px 125px; gap: 10px; align-items: center; padding: 14px 16px; }
 .split-head { background: #f7f8fb; color: var(--muted); font-size: 9px; font-weight: 800; text-transform: uppercase; }
 .split-row { border-top: 1px solid var(--line); font-size: 11px; }
 .split-row > strong:first-child, .split-row > strong:last-child { color: var(--blue); }
 .split-row div b, .split-row div small { display: block; }
 .split-row div small { color: var(--muted); margin-top: 4px; }
+.split-payment { width: max-content; padding: 6px 9px; border-radius: 99px; font-size: 9px; font-style: normal; font-weight: 800; }
+.split-payment.paid { background: #dcf6ea; color: var(--green); }
+.split-payment.pending { background: #fff2d9; color: #a36000; }
+.split-pay-button { padding: 8px 9px; color: var(--blue); }
 @media (max-width: 720px) {
   .split-summary { grid-template-columns: 1fr; }
   .split-table { overflow-x: auto; }

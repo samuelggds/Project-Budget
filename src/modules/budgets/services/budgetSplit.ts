@@ -11,3 +11,7 @@ export const calculateBudgetSplit = (budget: Budget) =>
 
 export const calculateAllSplits = (budgets: Budget[]) =>
   budgets.reduce((total, budget) => total + calculateBudgetSplit(budget), 0);
+
+export const calculatePendingSplits = (budgets: Budget[]) =>
+  budgets.reduce((total, budget) =>
+    total + (!budget.splitPaidAt ? calculateBudgetSplit(budget) : 0), 0);

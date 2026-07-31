@@ -64,6 +64,7 @@ export async function loadDatabase() {
       client: clientRow ? mapClient(clientRow) : { id: "", name: "", document: "", phone: "", email: "", contact: "", address: "", city: "", state: "CE", cep: "" },
       payment: text(row.payment), notes: text(row.notes), updatedAt: text(row.updated_at),
       pdfSavedAt: row.pdf_url ? text(row.updated_at) : undefined,
+      splitPaidAt: row.split_paid_at ? text(row.split_paid_at) : undefined,
       items: items.map((item) => ({
         id: text(item.id), serviceId: text(item.service_id), serviceCode: text(item.service_code),
         description: text(item.description), quantity: number(item.quantity),
@@ -107,7 +108,7 @@ export async function saveBudgetToDatabase(budget: Budget) {
     id: budget.id, number: budget.number, client_id: client.id || null,
     issued_at: budget.issuedAt, valid_days: budget.validDays,
     status: toDatabaseStatus[budget.status], payment: budget.payment || null,
-    notes: budget.notes || null, updated_at: updatedAt,
+    notes: budget.notes || null, split_paid_at: budget.splitPaidAt || null, updated_at: updatedAt,
   });
   assertNoError(budgetError);
 
@@ -127,4 +128,10 @@ export async function saveBudgetToDatabase(budget: Budget) {
 export async function deleteBudgetFromDatabase(id: string) {
   const { error } = await supabase.from("budgets").delete().eq("id", id);
   assertNoError(error);
+}
+
+export async function markSplitAsPaid(id: string) {
+  const paidAt = new Date().toISOString();
+  const { error } = await supabase.from("budgets").update({ split_paid_at: paidAt }).eq("id", id).in("status", ["APROVADO", "PAGO"]);
+  assertNoError(error); return paidAt;
 }

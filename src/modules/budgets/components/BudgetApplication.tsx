@@ -18,9 +18,9 @@ import { createBudgetPdf, downloadPdfBlob } from "../../pdf/services/budgetPdf";
 import type { Client } from "../../clients/types/Client";
 import type { Service } from "../../services/types/Service";
 import { getAllowedNextStatuses } from "../services/budgetStatus";
-import { calculateAllSplits, calculateBudgetSplit, hasSplit, SPLIT_RATE } from "../services/budgetSplit";
+import { calculateAllSplits, calculateBudgetSplit, calculatePendingSplits, hasSplit, SPLIT_RATE } from "../services/budgetSplit";
 import { supabase } from "../../auth/services/supabase";
-import { deleteBudgetFromDatabase, deleteServiceFromDatabase, loadDatabase, saveBudgetToDatabase, saveClientToDatabase, saveServiceToDatabase } from "../../shared/services/supabaseDatabase";
+import { deleteBudgetFromDatabase, deleteServiceFromDatabase, loadDatabase, markSplitAsPaid, saveBudgetToDatabase, saveClientToDatabase, saveServiceToDatabase } from "../../shared/services/supabaseDatabase";
 
 export function BudgetApplication() {
   const [tab, setTab] = useState<"new" | "saved" | "clients" | "services" | "splits" | "settings">("new");
@@ -49,6 +49,8 @@ export function BudgetApplication() {
   const visibleBudgets = paginateBudgets(filtered, page);
   const splitBudgets = saved.filter(hasSplit);
   const splitTotal = calculateAllSplits(saved);
+  const pendingSplitTotal = calculatePendingSplits(saved);
+  const paidSplitCount = splitBudgets.filter((item) => item.splitPaidAt).length;
 
   useEffect(() => {
     loadDatabase()
@@ -150,6 +152,17 @@ export function BudgetApplication() {
       setServices(services.filter((item) => item.id !== service.id));
       if (serviceDraft.id === service.id) setServiceDraft({ id: "", code: "", description: "", unit: "serv.", unitPrice: 0 });
       notify("Serviço excluído do banco");
+    } catch (error) { notify(`Erro: ${(error as Error).message}`); }
+  };
+
+  const paySplit = async (item: Budget) => {
+    if (item.splitPaidAt || !window.confirm(`Confirmar o pagamento do split de ${money(calculateBudgetSplit(item))} do orçamento ${item.number}?`)) return;
+    try {
+      const splitPaidAt = await markSplitAsPaid(item.id);
+      const updated = { ...item, splitPaidAt };
+      setSaved(saved.map((budgetItem) => budgetItem.id === item.id ? updated : budgetItem));
+      if (budget.id === item.id) setBudget(updated);
+      notify("Split marcado como pago e abatido do total");
     } catch (error) { notify(`Erro: ${(error as Error).message}`); }
   };
 
@@ -953,11 +966,12 @@ export function BudgetApplication() {
             <div className="split-summary">
               <div><span>Percentual do split</span><strong>{SPLIT_RATE * 100}%</strong></div>
               <div><span>Orçamentos com split</span><strong>{splitBudgets.length}</strong></div>
-              <div className="split-total"><span>Total acumulado dos splits</span><strong>{money(splitTotal)}</strong></div>
+              <div><span>Splits pagos</span><strong>{paidSplitCount}</strong></div>
+              <div className="split-total"><span>Total pendente dos splits</span><strong>{money(pendingSplitTotal)}</strong><small>Gerado: {money(splitTotal)}</small></div>
             </div>
-            <div className="split-info">Somente orçamentos aprovados ou pagos entram no cálculo. Orçamentos recusados não geram split.</div>
+            <div className="split-info">Orçamentos aprovados ou pagos geram split. O status Pago do orçamento é independente: somente o botão Marcar como pago quita o split e abate seu valor do total pendente.</div>
             <div className="split-table">
-              <div className="split-head"><span>Orçamento</span><span>Cliente</span><span>Status</span><span>Valor aprovado</span><span>Split (5%)</span></div>
+              <div className="split-head"><span>Orçamento</span><span>Cliente</span><span>Status</span><span>Valor aprovado</span><span>Split (5%)</span><span>Pagamento</span><span>Ação</span></div>
               {splitBudgets.map((item) => (
                 <div className="split-row" key={item.id}>
                   <strong>{item.number}</strong>
@@ -965,6 +979,8 @@ export function BudgetApplication() {
                   <em className={`status ${item.status.toLowerCase()}`}>{item.status}</em>
                   <span>{money(calculateBudgetTotal(item))}</span>
                   <strong>{money(calculateBudgetSplit(item))}</strong>
+                  <em className={`split-payment ${item.splitPaidAt ? "paid" : "pending"}`}>{item.splitPaidAt ? "Pago" : "Pendente"}</em>
+                  {item.splitPaidAt ? <small>{new Date(item.splitPaidAt).toLocaleDateString("pt-BR")}</small> : <button className="button split-pay-button" onClick={() => paySplit(item)}>Marcar como pago</button>}
                 </div>
               ))}
               {!splitBudgets.length && <div className="empty-history"><strong>Nenhum split calculado</strong><span>O valor aparecerá quando um orçamento for aprovado.</span></div>}
