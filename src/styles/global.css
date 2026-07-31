@@ -741,6 +741,25 @@ textarea {
 .button.danger { color: var(--red); border-color: #f2cbd2; background: #fff4f6; }
 .registry-layout { max-width: 1320px; margin: auto; display: grid; gap: 16px; }
 .registry-save { margin-top: 20px; }
+.service-form-card { scroll-margin-top: 18px; }
+.service-form-card.is-editing {
+  border-color: #7597e5;
+  box-shadow: 0 0 0 3px rgba(33, 76, 181, 0.1), 0 12px 32px rgba(16, 43, 99, 0.1);
+}
+.editing-service-notice {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: -5px 0 17px;
+  padding: 11px 13px;
+  border-radius: 9px;
+  background: #eef3ff;
+  color: var(--blue);
+  font-size: 11px;
+}
+.editing-service-notice span { color: #526079; }
+.service-form-actions { display: flex; gap: 9px; }
+.service-row.is-being-edited { background: #eef3ff; box-shadow: inset 3px 0 var(--blue); }
 .registry-list h2 { margin: 0; font-size: 16px; }
 .registry-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
 .registry-actions { display: flex; gap: 8px; }
@@ -1283,6 +1302,16 @@ textarea {
   .status-actions {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .service-form-actions,
+  .editing-service-notice {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .service-form-actions .button {
+    width: 100%;
   }
 
   .item-row {

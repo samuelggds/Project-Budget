@@ -143,12 +143,28 @@ export function BudgetApplication() {
   const registerService = async () => {
     if (!serviceDraft.code.trim() || !serviceDraft.description.trim()) return notify("Informe o código e o serviço");
     if (services.some((item) => item.code.toLowerCase() === serviceDraft.code.toLowerCase() && item.id !== serviceDraft.id)) return notify("Este código já está cadastrado");
+    const isEditing = Boolean(serviceDraft.id);
     try {
       const current = await saveServiceToDatabase({ ...serviceDraft, id: serviceDraft.id || crypto.randomUUID() });
       setServices([current, ...services.filter((item) => item.id !== current.id)]);
       setServiceDraft({ id: "", code: "", description: "", unit: "serv.", unitPrice: 0 });
-      notify("Serviço salvo no banco");
+      notify(isEditing ? "Serviço atualizado no banco" : "Serviço salvo no banco");
     } catch (error) { notify(`Erro: ${(error as Error).message}`); }
+  };
+
+  const editService = (service: Service) => {
+    setServiceDraft(service);
+    notify(`Editando o serviço ${service.code}`);
+    window.requestAnimationFrame(() => {
+      document.getElementById("service-form")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+  };
+
+  const clearServiceDraft = () => {
+    setServiceDraft({ id: "", code: "", description: "", unit: "serv.", unitPrice: 0 });
   };
 
   const advanceStatus = async (nextStatus: Budget["status"]) => {
@@ -925,7 +941,7 @@ export function BudgetApplication() {
 
         {tab === "clients" && (
           <section className="registry-layout">
-            <div className="card registry-form" id="service-form">
+            <div className="card registry-form">
               <div className="section-title"><span>01</span><div><h2>Cadastro de cliente</h2><p>Dados armazenados para reutilização</p></div></div>
               <div className="form-grid">
                 <label className="wide">Nome / Razão social<input value={clientDraft.name} onChange={(e) => setClientDraft({ ...clientDraft, name: e.target.value })} /></label>
@@ -950,22 +966,26 @@ export function BudgetApplication() {
 
         {tab === "services" && (
           <section className="registry-layout">
-            <div className="card registry-form">
-              <div className="section-title"><span>02</span><div><h2>Cadastro de serviço</h2><p>Esta tabela será ligada aos IDs do backend</p></div></div>
+            <div id="service-form" className={`card registry-form service-form-card ${serviceDraft.id ? "is-editing" : ""}`}>
+              <div className="section-title"><span>02</span><div><h2>{serviceDraft.id ? "Editar serviço" : "Cadastro de serviço"}</h2><p>{serviceDraft.id ? `Altere os dados de ${serviceDraft.code} e clique em Atualizar serviço` : "Esta tabela será ligada aos IDs do backend"}</p></div></div>
+              {serviceDraft.id && <div className="editing-service-notice"><strong>✎ Modo de edição ativo</strong><span>Você está editando o serviço {serviceDraft.code}.</span></div>}
               <div className="form-grid">
                 <label>Código<input placeholder="Ex.: SRV-001" value={serviceDraft.code} onChange={(e) => setServiceDraft({ ...serviceDraft, code: e.target.value.toUpperCase() })} /></label>
                 <label className="wide">Serviço<input value={serviceDraft.description} onChange={(e) => setServiceDraft({ ...serviceDraft, description: e.target.value })} /></label>
                 <label>Unidade<select value={serviceDraft.unit} onChange={(e) => setServiceDraft({ ...serviceDraft, unit: e.target.value })}><option>serv.</option><option>un.</option><option>h</option><option>m</option><option>kg</option></select></label>
                 <label>Valor<input type="number" min="0" step=".01" value={serviceDraft.unitPrice || ""} onChange={(e) => setServiceDraft({ ...serviceDraft, unitPrice: Number(e.target.value) })} /></label>
               </div>
-              <button className="button primary registry-save" onClick={registerService}>Salvar serviço</button>
+              <div className="service-form-actions">
+                <button className="button primary registry-save" onClick={registerService}>{serviceDraft.id ? "✓ Atualizar serviço" : "Salvar serviço"}</button>
+                {serviceDraft.id && <button className="button ghost registry-save" onClick={clearServiceDraft}>Cancelar edição</button>}
+              </div>
             </div>
             <div className="card registry-list">
-              <div className="registry-title"><h2>Planilha de serviços</h2><div className="registry-actions"><button className="button ghost" disabled={!services.length} onClick={downloadServicesPdf}>↧ Gerar PDF</button><button className="button soft" onClick={() => { setServiceDraft({ id: "", code: "", description: "", unit: "serv.", unitPrice: 0 }); document.getElementById("service-form")?.scrollIntoView({ behavior: "smooth" }); }}>＋ Adicionar serviço</button></div></div>
+              <div className="registry-title"><h2>Planilha de serviços</h2><div className="registry-actions"><button className="button ghost" disabled={!services.length} onClick={downloadServicesPdf}>↧ Gerar PDF</button><button className="button soft" onClick={() => { clearServiceDraft(); document.getElementById("service-form")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}>＋ Adicionar serviço</button></div></div>
               <div id="service-pdf" className="services-paper">
                 <div className="services-paper-head"><img src="/MG.jpg" alt="MG Refrigeração" /><div><h2>PLANILHA DE SERVIÇOS</h2><p>MG Refrigeração · Emitida em {new Date().toLocaleDateString("pt-BR")}</p></div></div>
                 <div className="service-head pdf-service-head"><span>Código</span><span>Serviço</span><span>Unidade</span><span>Valor</span><span className="service-actions-label">Ações</span></div>
-                {services.map((service) => <div className="service-row pdf-service-row" key={service.id}><code>{service.code}</code><div><strong>{service.description}</strong></div><span>{service.unit}</span><b>{money(service.unitPrice)}</b><div className="service-actions"><button onClick={() => setServiceDraft(service)}>Editar</button><button className="delete-service" onClick={() => removeService(service)}>Excluir</button></div></div>)}
+                {services.map((service) => <div className={`service-row pdf-service-row ${serviceDraft.id === service.id ? "is-being-edited" : ""}`} key={service.id}><code>{service.code}</code><div><strong>{service.description}</strong></div><span>{service.unit}</span><b>{money(service.unitPrice)}</b><div className="service-actions"><button onClick={() => editService(service)}>{serviceDraft.id === service.id ? "Editando..." : "Editar"}</button><button className="delete-service" onClick={() => removeService(service)}>Excluir</button></div></div>)}
                 <footer>{services.length} serviço(s) cadastrado(s)</footer>
               </div>
               {!services.length && <p className="registry-empty">Cadastre um serviço para usar o preenchimento automático.</p>}
