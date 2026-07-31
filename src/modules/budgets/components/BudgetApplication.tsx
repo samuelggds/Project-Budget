@@ -77,6 +77,17 @@ export function BudgetApplication() {
       .finally(() => setDatabaseLoading(false));
   }, []);
 
+  useEffect(() => {
+    if (tab !== "services" || !serviceDraft.id) return;
+
+    const scrollTimer = window.setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      document.getElementById("service-form")?.focus({ preventScroll: true });
+    }, 80);
+
+    return () => window.clearTimeout(scrollTimer);
+  }, [serviceDraft.id, tab]);
+
   const notify = (text: string) => {
     setToast(text);
     window.setTimeout(() => setToast(""), 2600);
@@ -155,12 +166,6 @@ export function BudgetApplication() {
   const editService = (service: Service) => {
     setServiceDraft(service);
     notify(`Editando o serviço ${service.code}`);
-    window.requestAnimationFrame(() => {
-      document.getElementById("service-form")?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    });
   };
 
   const clearServiceDraft = () => {
@@ -966,7 +971,7 @@ export function BudgetApplication() {
 
         {tab === "services" && (
           <section className="registry-layout">
-            <div id="service-form" className={`card registry-form service-form-card ${serviceDraft.id ? "is-editing" : ""}`}>
+            <div id="service-form" tabIndex={-1} className={`card registry-form service-form-card ${serviceDraft.id ? "is-editing" : ""}`}>
               <div className="section-title"><span>02</span><div><h2>{serviceDraft.id ? "Editar serviço" : "Cadastro de serviço"}</h2><p>{serviceDraft.id ? `Altere os dados de ${serviceDraft.code} e clique em Atualizar serviço` : "Esta tabela será ligada aos IDs do backend"}</p></div></div>
               {serviceDraft.id && <div className="editing-service-notice"><strong>✎ Modo de edição ativo</strong><span>Você está editando o serviço {serviceDraft.code}.</span></div>}
               <div className="form-grid">
