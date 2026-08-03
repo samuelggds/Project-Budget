@@ -1,18 +1,62 @@
-import html2pdf from "html2pdf.js";
+import { toPng } from "html-to-image";
+import { PDFDocument } from "pdf-lib";
+
+const A4_WIDTH_PX = Math.ceil((210 / 25.4) * 96);
+const A4_HEIGHT_PX = Math.ceil((297 / 25.4) * 96);
+const A4_WIDTH_POINTS = 595.28;
+const A4_HEIGHT_POINTS = 841.89;
+
+async function waitForDocumentAssets(element: HTMLElement) {
+  await document.fonts.ready;
+  await Promise.all(Array.from(element.querySelectorAll("img")).map((image) => image.complete
+    ? Promise.resolve()
+    : new Promise<void>((resolve) => {
+      image.addEventListener("load", () => resolve(), { once: true });
+      image.addEventListener("error", () => resolve(), { once: true });
+    })));
+}
 
 export async function createBudgetPdf(element: HTMLElement, filename: string) {
-  const worker = html2pdf()
-    .set({
-      margin: 0,
-      filename,
-      image: { type: "jpeg", quality: 1 },
-      html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff" },
-      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-    })
-    .from(element);
+  await waitForDocumentAssets(element);
 
-  const blob = await worker.outputPdf("blob");
-  return { blob, download: () => worker.save() };
+  const contentHeight = Math.max(A4_HEIGHT_PX, element.scrollHeight);
+  const imageData = await toPng(element, {
+    backgroundColor: "#ffffff",
+    cacheBust: true,
+    pixelRatio: 2,
+    width: A4_WIDTH_PX,
+    height: contentHeight,
+    style: {
+      width: `${A4_WIDTH_PX}px`,
+      minWidth: `${A4_WIDTH_PX}px`,
+      maxWidth: `${A4_WIDTH_PX}px`,
+      minHeight: `${A4_HEIGHT_PX}px`,
+      height: `${contentHeight}px`,
+      margin: "0",
+      transform: "none",
+      transformOrigin: "top left",
+      boxShadow: "none",
+      overflow: "visible",
+    },
+  });
+
+  const pdfDocument = await PDFDocument.create();
+  const page = pdfDocument.addPage([A4_WIDTH_POINTS, A4_HEIGHT_POINTS]);
+  const image = await pdfDocument.embedPng(imageData);
+  const scale = Math.min(page.getWidth() / image.width, page.getHeight() / image.height);
+  const width = image.width * scale;
+  const height = image.height * scale;
+
+  page.drawImage(image, {
+    x: (page.getWidth() - width) / 2,
+    y: (page.getHeight() - height) / 2,
+    width,
+    height,
+  });
+
+  const bytes = await pdfDocument.save();
+  const blob = new Blob([Uint8Array.from(bytes)], { type: "application/pdf" });
+  return { blob, download: () => downloadPdfBlob(blob, filename) };
 }
 
 export function downloadPdfBlob(blob: Blob, filename: string) {
@@ -20,6 +64,11 @@ export function downloadPdfBlob(blob: Blob, filename: string) {
   const anchor = document.createElement("a");
   anchor.href = url;
   anchor.download = filename;
+  anchor.rel = "noopener";
+  document.body.appendChild(anchor);
   anchor.click();
-  URL.revokeObjectURL(url);
+  anchor.remove();
+
+  // Navegadores móveis podem terminar o download depois do evento de clique.
+  window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
