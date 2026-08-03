@@ -582,6 +582,19 @@ textarea {
   font-size: 12px;
   font-weight: 700;
 }
+.preview-area {
+  width: 100%;
+  overflow: hidden;
+}
+.paper-scale-shell {
+  position: relative;
+  margin: 0 auto;
+  overflow: visible;
+}
+.paper-scale-shell .paper {
+  margin: 0;
+  transform-origin: top left;
+}
 .paper {
   background: #fff;
   width: 210mm;
@@ -590,6 +603,8 @@ textarea {
   padding: 15mm;
   box-shadow: 0 10px 40px #1a2e581a;
   color: #17233d;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
 }
 .paper-head {
   display: grid;
@@ -611,10 +626,11 @@ textarea {
   font-size: 10px;
   line-height: 1.5;
   margin: 0;
-  color: #56627a;
+  color: #334155;
 }
 .paper-number {
-  background: #f3f6fc;
+  background: #dce7f8;
+  border: 1px solid #aebfda;
   padding: 14px;
   text-align: right;
   border-radius: 8px;
@@ -643,7 +659,8 @@ textarea {
 }
 .paper-client {
   margin: 18px 0;
-  background: #f7f8fb;
+  background: #e1e7ef;
+  border: 1px solid #aab5c5;
   padding: 15px;
 }
 .paper-client h3 {
@@ -658,21 +675,37 @@ textarea {
 .paper-client p {
   font-size: 9px;
   margin: 3px 0;
+  color: #1f2937;
 }
 .paper table {
   width: 100%;
   border-collapse: collapse;
   font-size: 9px;
+  border: 1px solid #aeb8c8;
 }
 .paper th {
   background: var(--navy);
   color: #fff;
   text-align: left;
   padding: 9px;
+  border-right: 1px solid #49618f;
 }
 .paper td {
   padding: 10px 9px;
-  border-bottom: 1px solid #e5e8ee;
+  border-right: 1px solid #cbd3df;
+  border-bottom: 1px solid #b8c1cf;
+  color: #111827;
+  font-weight: 600;
+}
+.paper tbody tr:nth-child(even) {
+  background: #e3e8ef;
+}
+.paper tbody tr:nth-child(odd) {
+  background: #ffffff;
+}
+.paper th:last-child,
+.paper td:last-child {
+  border-right: 0;
 }
 .paper th:nth-last-child(-n + 2),
 .paper td:nth-last-child(-n + 2) {
@@ -686,10 +719,16 @@ textarea {
 }
 .paper-summary > div {
   padding: 14px;
-  border: 1px solid #e1e6ef;
+  border: 1px solid #aeb8c8;
+  background: #e5eaf1;
 }
 .paper-summary p {
   font-size: 9px;
+}
+.paper-summary > div:not(:last-child) p,
+.paper-notes p {
+  color: #1f2937;
+  font-weight: 500;
 }
 .paper-summary > div:last-child {
   background: var(--navy);
@@ -706,7 +745,8 @@ textarea {
 }
 .paper-notes {
   padding: 14px;
-  border: 1px solid #e1e6ef;
+  border: 1px solid #aeb8c8;
+  background: #e7ebf1;
   margin-top: 12px;
 }
 .paper-notes p {
@@ -729,7 +769,7 @@ textarea {
 }
 .paper footer {
   text-align: center;
-  color: #7d879a;
+  color: #475569;
   font-size: 8px;
   margin-top: 50px;
   border-top: 1px solid #e5e8ee;
@@ -1180,11 +1220,6 @@ textarea {
   .item-row .remove {
     grid-column: 5;
   }
-  .paper {
-    transform-origin: top left;
-    transform: scale(0.88);
-    margin-bottom: -35mm;
-  }
 }
 @media (max-width: 720px) {
   .sidebar {
@@ -1538,14 +1573,7 @@ textarea {
     text-align: center;
   }
 
-  .preview-area {
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-  }
-
-  .paper {
-    transform-origin: top left;
-  }
+  .preview-area { overflow: hidden; }
 
   .budget-bottom-actions {
     margin-top: 14px;
@@ -1585,17 +1613,6 @@ textarea {
     padding-left: 12px;
   }
 
-  .paper {
-    transform: scale(0.43);
-    margin-bottom: -169mm;
-  }
-}
-
-@media (max-width: 350px) {
-  .paper {
-    transform: scale(0.37);
-    margin-bottom: -187mm;
-  }
 }
 @media print {
   body {

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Budget, BudgetItem as Item } from "../types/Budget";
 import { deletePdf, getPdf, savePdf } from "../../pdf/services/pdfStorage";
 import {
@@ -44,6 +44,9 @@ export function BudgetApplication() {
   const [databaseError, setDatabaseError] = useState("");
   const [clientDraft, setClientDraft] = useState<Client>({ id: "", name: "", document: "", phone: "", email: "", contact: "", address: "", city: "", state: "CE", cep: "" });
   const [serviceDraft, setServiceDraft] = useState<Service>({ id: "", code: "", description: "", unit: "serv.", unitPrice: 0 });
+  const previewAreaRef = useRef<HTMLDivElement>(null);
+  const paperRef = useRef<HTMLElement>(null);
+  const [paperPreview, setPaperPreview] = useState({ scale: 1, width: 0, height: 0 });
 
   const total = useMemo(() => calculateBudgetTotal(budget), [budget]);
   const filtered = filterBudgets(saved, {
@@ -94,6 +97,32 @@ export function BudgetApplication() {
 
     return () => window.clearTimeout(scrollTimer);
   }, [serviceDraft.id, tab]);
+
+  useEffect(() => {
+    if (!preview || tab !== "new") return;
+    const area = previewAreaRef.current;
+    const paper = paperRef.current;
+    if (!area || !paper) return;
+
+    const resizePreview = () => {
+      const naturalWidth = paper.scrollWidth || paper.offsetWidth;
+      const naturalHeight = paper.scrollHeight || paper.offsetHeight;
+      const availableWidth = area.clientWidth;
+      const scale = naturalWidth > 0 ? Math.min(1, availableWidth / naturalWidth) : 1;
+      const next = {
+        scale,
+        width: Math.ceil(naturalWidth * scale),
+        height: Math.ceil(naturalHeight * scale),
+      };
+      setPaperPreview((current) => current.scale === next.scale && current.width === next.width && current.height === next.height ? current : next);
+    };
+
+    const observer = new ResizeObserver(resizePreview);
+    observer.observe(area);
+    observer.observe(paper);
+    const frame = window.requestAnimationFrame(resizePreview);
+    return () => { observer.disconnect(); window.cancelAnimationFrame(frame); };
+  }, [preview, tab]);
 
   const notify = (text: string) => {
     setToast(text);
@@ -682,10 +711,13 @@ export function BudgetApplication() {
         )}
 
         {tab === "new" && preview && (
-          <div className="preview-area">
+          <div ref={previewAreaRef} className="preview-area">
+            <div className="paper-scale-shell" style={{ width: paperPreview.width || undefined, height: paperPreview.height || undefined }}>
             <article
+              ref={paperRef}
               id="budget-pdf"
               className={`paper ${budget.items.length > 12 ? "paper-ultra" : budget.items.length > 7 ? "paper-dense" : ""}`}
+              style={{ transform: `scale(${paperPreview.scale})` }}
             >
               <div className="paper-head">
                 <img src="/MG.jpg" alt="MG Refrigeração" />
@@ -790,6 +822,7 @@ export function BudgetApplication() {
                 qualquer dúvida.
               </footer>
             </article>
+            </div>
           </div>
         )}
 
