@@ -179,6 +179,35 @@ export function BudgetApplication() {
     setServiceDraft({ id: "", code: "", description: "", unit: "serv.", unitPrice: 0 });
   };
 
+  const addServiceToBudget = (service: Service) => {
+    setBudget((current) => {
+      const base = ["Aprovado", "Pago", "Recusado"].includes(current.status)
+        ? createNextBudget(saved)
+        : current;
+      const emptyOnly =
+        base.items.length === 1 &&
+        !base.items[0].description.trim() &&
+        !base.items[0].serviceCode;
+      const serviceItem: Item = {
+        id: crypto.randomUUID(),
+        serviceId: service.id,
+        serviceCode: service.code,
+        description: service.description,
+        quantity: 1,
+        unit: "un.",
+        unitPrice: service.unitPrice,
+      };
+
+      return {
+        ...base,
+        items: emptyOnly ? [serviceItem] : [...base.items, serviceItem],
+      };
+    });
+    setPreview(false);
+    setTab("new");
+    notify(`${service.description} adicionado ao orçamento`);
+  };
+
   const advanceStatus = async (nextStatus: Budget["status"]) => {
     if (!getAllowedNextStatuses(budget.status).includes(nextStatus)) return notify("Mudança de status não permitida");
     try {
@@ -954,7 +983,7 @@ export function BudgetApplication() {
               <div id="service-pdf" className="services-paper">
                 <div className="services-paper-head"><img src="/MG.jpg" alt="MG Refrigeração" /><div><h2>PLANILHA DE SERVIÇOS</h2><p>MG Refrigeração · Emitida em {new Date().toLocaleDateString("pt-BR")}</p></div></div>
                 <div className="service-head pdf-service-head"><span>Código</span><span>Serviço</span><span>Unidade</span><span>Valor</span><span className="service-actions-label">Ações</span></div>
-                {services.map((service) => <div className={`service-row pdf-service-row ${serviceDraft.id === service.id ? "is-being-edited" : ""}`} key={service.id}><code>{service.code}</code><div><strong>{service.description}</strong></div><span>{service.unit}</span><b>{money(service.unitPrice)}</b><div className="service-actions"><button onClick={() => editService(service)}>{serviceDraft.id === service.id ? "Editando..." : "Editar"}</button><button className="delete-service" onClick={() => removeService(service)}>Excluir</button></div></div>)}
+                {services.map((service) => <div className={`service-row pdf-service-row ${serviceDraft.id === service.id ? "is-being-edited" : ""}`} key={service.id}><code>{service.code}</code><div><strong>{service.description}</strong></div><span>{service.unit}</span><b>{money(service.unitPrice)}</b><div className="service-actions"><button className="add-to-budget" onClick={() => addServiceToBudget(service)}>＋ Orçamento</button><button onClick={() => editService(service)}>{serviceDraft.id === service.id ? "Editando..." : "Editar"}</button><button className="delete-service" onClick={() => removeService(service)}>Excluir</button></div></div>)}
                 <footer>{services.length} serviço(s) cadastrado(s)</footer>
               </div>
               {!services.length && <p className="registry-empty">Cadastre um serviço para usar o preenchimento automático.</p>}
