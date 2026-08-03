@@ -6,14 +6,38 @@ const A4_HEIGHT_PX = Math.ceil((297 / 25.4) * 96);
 const A4_WIDTH_POINTS = 595.28;
 const A4_HEIGHT_POINTS = 841.89;
 
+async function toDataUrl(url: string): Promise<string> {
+  const response = await fetch(url);
+  const blob = await response.blob();
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
 async function waitForDocumentAssets(element: HTMLElement) {
   await document.fonts.ready;
-  await Promise.all(Array.from(element.querySelectorAll("img")).map((image) => image.complete
-    ? Promise.resolve()
-    : new Promise<void>((resolve) => {
-      image.addEventListener("load", () => resolve(), { once: true });
-      image.addEventListener("error", () => resolve(), { once: true });
-    })));
+  const images = Array.from(element.querySelectorAll("img"));
+  await Promise.all(
+    images.map(async (image) => {
+      if (!image.complete) {
+        await new Promise<void>((resolve) => {
+          image.addEventListener("load", () => resolve(), { once: true });
+          image.addEventListener("error", () => resolve(), { once: true });
+        });
+      }
+      // Embeds image as base64 so mobile browsers can render it in canvas
+      if (image.src && !image.src.startsWith("data:")) {
+        try {
+          image.src = await toDataUrl(image.src);
+        } catch {
+          // keep original src if fetch fails
+        }
+      }
+    }),
+  );
 }
 
 export async function createBudgetPdf(element: HTMLElement, filename: string) {
@@ -43,7 +67,10 @@ export async function createBudgetPdf(element: HTMLElement, filename: string) {
   const pdfDocument = await PDFDocument.create();
   const page = pdfDocument.addPage([A4_WIDTH_POINTS, A4_HEIGHT_POINTS]);
   const image = await pdfDocument.embedPng(imageData);
-  const scale = Math.min(page.getWidth() / image.width, page.getHeight() / image.height);
+  const scale = Math.min(
+    page.getWidth() / image.width,
+    page.getHeight() / image.height,
+  );
   const width = image.width * scale;
   const height = image.height * scale;
 
