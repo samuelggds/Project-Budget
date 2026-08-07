@@ -10,7 +10,11 @@ import {
   formatMoney as money,
 } from "../services/budgetCalculations";
 import { filterBudgets } from "../../history/services/filterBudgets";
-import { createBudgetPdf, downloadPdfBlob } from "../../pdf/services/budgetPdf";
+import {
+  createBudgetPdf,
+  createServicesPdf,
+  downloadPdfBlob,
+} from "../../pdf/services/budgetPdf";
 import type { Client } from "../../clients/types/Client";
 import type { Service } from "../../services/types/Service";
 import { getAllowedNextStatuses } from "../services/budgetStatus";
@@ -410,20 +414,16 @@ export function BudgetApplication() {
   };
 
   const downloadServicesPdf = async () => {
-    const element = document.getElementById("service-pdf");
-    if (!element) return;
     notify("Gerando planilha em PDF...");
-    element.classList.add("is-exporting");
     try {
-      const pdf = await createBudgetPdf(
-        element,
+      const pdf = await createServicesPdf(
+        services,
         `planilha-servicos-${new Date().toISOString().slice(0, 10)}.pdf`,
-        { fillPage: true },
       );
       await pdf.download();
       notify("Planilha baixada em PDF");
-    } finally {
-      element.classList.remove("is-exporting");
+    } catch (error) {
+      notify(`Erro: ${(error as Error).message}`);
     }
   };
 
@@ -1537,12 +1537,10 @@ export function BudgetApplication() {
                     className="button soft"
                     onClick={() => {
                       clearServiceDraft();
-                      document
-                        .getElementById("service-form")
-                        ?.scrollIntoView({
-                          behavior: "smooth",
-                          block: "start",
-                        });
+                      document.getElementById("service-form")?.scrollIntoView({
+                        behavior: "smooth",
+                        block: "start",
+                      });
                     }}
                   >
                     ＋ Adicionar serviço
