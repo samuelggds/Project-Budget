@@ -1,4 +1,4 @@
-const DATABASE = "mg-orcamentos-pdfs";
+const DATABASE = "mgorcamentos-pdfs";
 const STORE = "pdfs";
 
 function openDatabase() {

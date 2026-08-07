@@ -1,5 +1,5 @@
 {
-  "name": "mg-orcamentos",
+  "name": "mgorcamentos",
   "private": true,
   "version": "1.0.0",
   "type": "module",
@@ -19,6 +19,7 @@
     "vite": "latest"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "^2.11.4",
     "@types/react": "latest",
     "@types/react-dom": "latest"
   }

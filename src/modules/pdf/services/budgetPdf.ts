@@ -40,7 +40,11 @@ async function waitForDocumentAssets(element: HTMLElement) {
   );
 }
 
-export async function createBudgetPdf(element: HTMLElement, filename: string) {
+export async function createBudgetPdf(
+  element: HTMLElement,
+  filename: string,
+  { fillPage = false } = {},
+) {
   await waitForDocumentAssets(element);
 
   const contentHeight = Math.max(A4_HEIGHT_PX, element.scrollHeight);
@@ -67,18 +71,33 @@ export async function createBudgetPdf(element: HTMLElement, filename: string) {
   const pdfDocument = await PDFDocument.create();
   const page = pdfDocument.addPage([A4_WIDTH_POINTS, A4_HEIGHT_POINTS]);
   const image = await pdfDocument.embedPng(imageData);
-  const scale = Math.min(
-    page.getWidth() / image.width,
-    page.getHeight() / image.height,
-  );
-  const width = image.width * scale;
-  const height = image.height * scale;
+
+  let drawWidth: number;
+  let drawHeight: number;
+  let drawX: number;
+  let drawY: number;
+
+  if (fillPage) {
+    drawWidth = page.getWidth();
+    drawHeight = page.getHeight();
+    drawX = 0;
+    drawY = 0;
+  } else {
+    const scale = Math.min(
+      page.getWidth() / image.width,
+      page.getHeight() / image.height,
+    );
+    drawWidth = image.width * scale;
+    drawHeight = image.height * scale;
+    drawX = (page.getWidth() - drawWidth) / 2;
+    drawY = (page.getHeight() - drawHeight) / 2;
+  }
 
   page.drawImage(image, {
-    x: (page.getWidth() - width) / 2,
-    y: (page.getHeight() - height) / 2,
-    width,
-    height,
+    x: drawX,
+    y: drawY,
+    width: drawWidth,
+    height: drawHeight,
   });
 
   const bytes = await pdfDocument.save();

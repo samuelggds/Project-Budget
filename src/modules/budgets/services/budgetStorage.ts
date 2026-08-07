@@ -1,6 +1,6 @@
 import type { Budget } from "../types/Budget";
 
-const STORAGE_KEY = "mg-orcamentos";
+const STORAGE_KEY = "mgorcamentos";
 
 export function listBudgets(): Budget[] {
   try {
