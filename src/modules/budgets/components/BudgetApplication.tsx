@@ -1276,9 +1276,11 @@ export function BudgetApplication() {
                 {historyVisibleCount < filtered.length && (
                   <button
                     className="button primary"
-                    onClick={() => setHistoryVisibleCount((count) => count + 5)}
+                    onClick={() =>
+                      setHistoryVisibleCount((count) => count + 10)
+                    }
                   >
-                    Carregar mais 5
+                    Carregar mais 10
                   </button>
                 )}
               </div>
@@ -1752,9 +1754,9 @@ export function BudgetApplication() {
                 {splitVisibleCount < filteredSplitBudgets.length && (
                   <button
                     className="button primary"
-                    onClick={() => setSplitVisibleCount((count) => count + 5)}
+                    onClick={() => setSplitVisibleCount((count) => count + 10)}
                   >
-                    Carregar mais 5
+                    Carregar mais 10
                   </button>
                 )}
               </div>
