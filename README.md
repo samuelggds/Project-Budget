@@ -30,6 +30,12 @@ Clientes, serviços, orçamentos e itens são lidos e gravados diretamente no Su
 
 Os PDFs continuam guardados no navegador via IndexedDB. Os registros e cálculos ficam sincronizados no Supabase; a sincronização dos próprios arquivos PDF exige configurar um bucket no Supabase Storage em uma etapa separada.
 
+## Configurações da empresa
+
+Os dados de **Configurações > Empresa** são persistidos no Supabase na tabela `company_settings`. Antes de publicar essa versão, execute uma vez `supabase/company-settings-migration.sql` no **Supabase SQL Editor**. A migration cria a tabela, a linha inicial e as políticas RLS para a conta autenticada.
+
+Razão social, CNPJ, telefone, e-mail e endereço passam a ser carregados do banco e usados no cabeçalho/assinatura dos orçamentos gerados.
+
 ## Split
 
 O frontend calcula 5% sobre orçamentos `Aprovado` ou `Pago`. O status `Pago` do orçamento não quita o split. O pagamento do split é controlado separadamente em `budgets.split_paid_at`: somente o botão manual da aba Splits abate o valor do total pendente. Execute `supabase/split-payment-migration.sql` uma vez no SQL Editor antes de usar essa versão.
