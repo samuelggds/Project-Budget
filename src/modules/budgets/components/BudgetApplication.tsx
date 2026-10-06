@@ -36,6 +36,12 @@ import {
   saveServiceToDatabase,
 } from "../../shared/services/supabaseDatabase";
 import { SmoothSelect } from "../../shared/components/SmoothSelect";
+import {
+  DEFAULT_COMPANY_SETTINGS,
+  loadCompanySettings,
+  saveCompanySettingsToDatabase,
+  type CompanySettings,
+} from "../../settings/services/companySettingsDatabase";
 
 const withDefaultItemUnit = (current: Budget): Budget => ({
   ...current,
@@ -60,6 +66,10 @@ export function BudgetApplication() {
   const [services, setServices] = useState<Service[]>([]);
   const [databaseLoading, setDatabaseLoading] = useState(true);
   const [databaseError, setDatabaseError] = useState("");
+  const [companySettings, setCompanySettings] = useState<CompanySettings>(
+    DEFAULT_COMPANY_SETTINGS,
+  );
+  const [companySettingsSaving, setCompanySettingsSaving] = useState(false);
   const [clientDraft, setClientDraft] = useState<Client>({
     id: "",
     name: "",
@@ -118,12 +128,13 @@ export function BudgetApplication() {
   const paidSplitCount = splitBudgets.filter((item) => item.splitPaidAt).length;
 
   useEffect(() => {
-    loadDatabase()
-      .then((data) => {
+    Promise.all([loadDatabase(), loadCompanySettings()])
+      .then(([data, settings]) => {
         const normalizedBudgets = data.budgets.map(withDefaultItemUnit);
         setClients(data.clients);
         setServices(data.services);
         setSaved(normalizedBudgets);
+        setCompanySettings(settings);
         if (normalizedBudgets.length)
           setBudget(createNextBudget(normalizedBudgets));
       })
@@ -413,6 +424,22 @@ export function BudgetApplication() {
     }
   };
 
+  const saveCompanySettings = async () => {
+    if (!companySettings.companyName.trim())
+      return notify("Informe a razão social da empresa");
+
+    setCompanySettingsSaving(true);
+    try {
+      const savedSettings = await saveCompanySettingsToDatabase(companySettings);
+      setCompanySettings(savedSettings);
+      notify("Configurações salvas no banco");
+    } catch (error) {
+      notify(`Erro: ${(error as Error).message}`);
+    } finally {
+      setCompanySettingsSaving(false);
+    }
+  };
+
   const downloadServicesPdf = async () => {
     notify("Gerando planilha em PDF...");
     try {
@@ -542,7 +569,7 @@ export function BudgetApplication() {
     <div className="app-shell">
       <aside className="sidebar">
         <div className="brand">
-          <img src="/MG.jpg" alt="MG Refrigeração" />
+          <img src="/MG.jpg" alt={companySettings.companyName} />
           <div>
             <strong>MG Orçamentos</strong>
             <span>Refrigeração</span>
@@ -591,7 +618,7 @@ export function BudgetApplication() {
         <div className="profile">
           <span>MG</span>
           <div>
-            <strong>MG Refrigeração</strong>
+            <strong>{companySettings.companyName}</strong>
             <small>Administrador</small>
           </div>
           <button
@@ -996,12 +1023,17 @@ export function BudgetApplication() {
                 style={{ transform: `scale(${paperPreview.scale})` }}
               >
                 <div className="paper-head">
-                  <img src="/MG.jpg" alt="MG Refrigeração" />
+                  <img src="/MG.jpg" alt={companySettings.companyName} />
                   <div>
-                    <h2>MG REFRIGERAÇÃO</h2>
-                    <p>Rua Francisco Calaça, 1688 · Fortaleza — CE</p>
-                    <p>CEP 60.336-232 · (85) 98932-3113</p>
-                    <p>CNPJ 31.263.081/0001-46 · matheuslegend10@icloud.com</p>
+                    <h2>{companySettings.companyName.toUpperCase()}</h2>
+                    <p>{companySettings.address || "Endereço não informado"}</p>
+                    <p>{companySettings.phone || "Telefone não informado"}</p>
+                    <p>
+                      {companySettings.cnpj
+                        ? `CNPJ ${companySettings.cnpj}`
+                        : "CNPJ não informado"}
+                      {companySettings.email ? ` · ${companySettings.email}` : ""}
+                    </p>
                   </div>
                   <div className="paper-number">
                     <span>ORÇAMENTO</span>
@@ -1090,7 +1122,7 @@ export function BudgetApplication() {
                 <div className="signatures">
                   <div></div>
                   <div></div>
-                  <p>MG Refrigeração</p>
+                  <p>{companySettings.companyName}</p>
                   <p>{budget.client.name || "Cliente"}</p>
                 </div>
                 <footer>
@@ -1795,30 +1827,72 @@ export function BudgetApplication() {
               <div className="form-grid">
                 <label>
                   Razão social
-                  <input defaultValue="MG Refrigeração" />
+                  <input
+                    value={companySettings.companyName}
+                    onChange={(e) =>
+                      setCompanySettings({
+                        ...companySettings,
+                        companyName: e.target.value,
+                      })
+                    }
+                  />
                 </label>
                 <label>
                   CNPJ
-                  <input defaultValue="31.263.081/0001-46" />
+                  <input
+                    value={companySettings.cnpj}
+                    onChange={(e) =>
+                      setCompanySettings({
+                        ...companySettings,
+                        cnpj: e.target.value,
+                      })
+                    }
+                  />
                 </label>
                 <label>
                   Telefone
-                  <input defaultValue="(85) 98932-3113" />
+                  <input
+                    value={companySettings.phone}
+                    onChange={(e) =>
+                      setCompanySettings({
+                        ...companySettings,
+                        phone: e.target.value,
+                      })
+                    }
+                  />
                 </label>
                 <label>
                   E-mail
-                  <input defaultValue="matheuslegend10@icloud.com" />
+                  <input
+                    type="email"
+                    value={companySettings.email}
+                    onChange={(e) =>
+                      setCompanySettings({
+                        ...companySettings,
+                        email: e.target.value,
+                      })
+                    }
+                  />
                 </label>
                 <label className="full">
                   Endereço
-                  <input defaultValue="Rua Francisco Calaça, 1688 — Fortaleza/CE — CEP 60.336-232" />
+                  <input
+                    value={companySettings.address}
+                    onChange={(e) =>
+                      setCompanySettings({
+                        ...companySettings,
+                        address: e.target.value,
+                      })
+                    }
+                  />
                 </label>
               </div>
               <button
                 className="button primary"
-                onClick={() => notify("Configurações salvas")}
+                disabled={companySettingsSaving}
+                onClick={() => void saveCompanySettings()}
               >
-                Salvar alterações
+                {companySettingsSaving ? "Salvando..." : "Salvar alterações"}
               </button>
             </div>
           </section>
