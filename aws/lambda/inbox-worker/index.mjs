@@ -46,10 +46,34 @@ function safeFilename(value) {
 }
 async function resolveThreadId({inReplyTo,references,subject,participants}) {
   for (const candidate of [inReplyTo,...references].filter(Boolean)) {
-    const rows=await sb("mail_messages?message_id=eq."+encodeURIComponent(candidate)+"&select=thread_id&limit=1");
+    const normalizedCandidate = String(candidate).replace(/^<|>$/g, "");
+    const rows=await sb(
+      "mail_messages?or=(message_id.eq."+
+        encodeURIComponent(candidate)+
+        ",provider_message_id.eq."+
+        encodeURIComponent(normalizedCandidate)+
+        ")&select=thread_id&limit=1"
+    );
     if(rows?.[0]?.thread_id) return rows[0].thread_id;
   }
-  const seed=[inReplyTo,...references].filter(Boolean)[0] || normalizeSubject(subject)+"|"+participants.sort().join("|");
+
+  const baseSubject=normalizeSubject(subject);
+  if(baseSubject){
+    const rows=await sb(
+      "mail_messages?direction=eq.outbound&subject=ilike."+
+        encodeURIComponent(baseSubject)+
+        "&select=thread_id,to_addresses,from_address&order=sent_at.desc.nullslast&limit=20"
+    );
+    const participantSet=new Set(participants.map((x)=>String(x).toLowerCase()));
+    for(const row of rows||[]){
+      const addresses=[...(row.to_addresses||[]),row.from_address]
+        .map((x)=>String(x||"").toLowerCase())
+        .filter(Boolean);
+      if(addresses.some((address)=>participantSet.has(address))) return row.thread_id;
+    }
+  }
+
+  const seed=[inReplyTo,...references].filter(Boolean)[0] || baseSubject+"|"+participants.sort().join("|");
   return crypto.createHash("sha256").update(seed||crypto.randomUUID()).digest("hex").slice(0,40);
 }
 async function processS3Record(record) {
@@ -83,10 +107,10 @@ async function processS3Record(record) {
   const message=rows?.[0]; if(!message?.id) throw new Error("Mensagem não persistida.");
 
   const attachmentRows=[];
-  for(const a of parsed.attachments||[]){
+  for(const [index,a] of (parsed.attachments||[]).entries()){
     if(!a?.content?.length) continue;
     const filename=safeFilename(a.filename);
-    const attachmentKey="inbox/attachments/"+message.id+"/"+crypto.randomUUID()+"-"+filename;
+    const attachmentKey="inbox/attachments/"+message.id+"/"+String(index).padStart(3,"0")+"-"+filename;
     await s3.send(new PutObjectCommand({
       Bucket:bucket,Key:attachmentKey,Body:a.content,
       ContentType:a.contentType||"application/octet-stream",ServerSideEncryption:"AES256"
