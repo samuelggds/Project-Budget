@@ -22,7 +22,7 @@
     "vite": "latest",
     "@aws-sdk/client-s3": "^3.910.0",
     "@aws-sdk/client-ses": "^3.910.0",
-    "@tauri-apps/api": "2.11.5",
+    "@tauri-apps/api": "2.11.1",
     "@tauri-apps/plugin-process": "^2",
     "@tauri-apps/plugin-updater": "^2"
   },
