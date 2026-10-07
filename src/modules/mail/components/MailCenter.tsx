@@ -182,7 +182,7 @@ export function MailCenter({ budgets, clients, notify }: Props) {
       text: "",
       threadId: message.threadId,
       inReplyTo: message.messageId,
-      references: uniqueAddresses([...message.references, message.messageId]),
+      references: [...new Set([...message.references, message.messageId].filter(Boolean))],
       budgetId: message.budgetId,
       clientId: message.clientId,
     });
