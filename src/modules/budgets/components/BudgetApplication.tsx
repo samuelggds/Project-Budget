@@ -472,6 +472,32 @@ export function BudgetApplication() {
     setTab("new");
   };
 
+  const createBudgetFromEmailSender = (name: string, email: string) => {
+    const normalizedEmail = email.trim().toLowerCase();
+    const existingClient = clients.find(
+      (client) => client.email.trim().toLowerCase() === normalizedEmail,
+    );
+    const next = createNextBudget(saved);
+
+    setBudget({
+      ...next,
+      client: existingClient
+        ? { ...existingClient }
+        : {
+            ...next.client,
+            name: name.trim(),
+            email: normalizedEmail,
+          },
+    });
+    setPreview(false);
+    setTab("new");
+    notify(
+      existingClient
+        ? "Novo orçamento iniciado com o cliente cadastrado"
+        : "Novo orçamento iniciado com o remetente do e-mail",
+    );
+  };
+
   const openBudget = (item: Budget) => {
     setBudget(withDefaultItemUnit(item));
     setTab("new");
@@ -1808,7 +1834,12 @@ export function BudgetApplication() {
         )}
 
         {tab === "mail" && (
-          <MailCenter budgets={saved} clients={clients} notify={notify} />
+          <MailCenter
+            budgets={saved}
+            clients={clients}
+            notify={notify}
+            onCreateBudgetFromSender={createBudgetFromEmailSender}
+          />
         )}
 
         {tab === "settings" && (
