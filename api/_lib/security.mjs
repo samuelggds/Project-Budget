@@ -72,7 +72,12 @@ export async function requireAdmin(req, res) {
     .toLowerCase();
   const email = String(user.email || "").trim().toLowerCase();
 
-  if (allowed && email !== allowed) {
+  if (!allowed) {
+    sendJson(res, 500, { error: "ADMIN_EMAIL não configurado no servidor." });
+    return null;
+  }
+
+  if (email !== allowed) {
     sendJson(res, 403, { error: "Conta sem permissão para esta operação." });
     return null;
   }
