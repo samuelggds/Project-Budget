@@ -23,6 +23,7 @@ type Props = {
   budgets: Budget[];
   clients: Client[];
   notify: (message: string) => void;
+  onCreateBudgetFromSender: (name: string, email: string) => void;
 };
 
 const folders: Array<{ value: MailFolder; label: string; icon: string }> = [
@@ -69,7 +70,12 @@ function uniqueAddresses(values: string[]) {
   return [...new Set(values.map((value) => value.trim().toLowerCase()).filter(Boolean))];
 }
 
-export function MailCenter({ budgets, clients, notify }: Props) {
+export function MailCenter({
+  budgets,
+  clients,
+  notify,
+  onCreateBudgetFromSender,
+}: Props) {
   const [folder, setFolder] = useState<MailFolder>("inbox");
   const [messages, setMessages] = useState<MailMessage[]>([]);
   const [selected, setSelected] = useState<MailMessage | null>(null);
@@ -411,6 +417,19 @@ export function MailCenter({ budgets, clients, notify }: Props) {
                 </span>
               </div>
               <div className="mail-reader-actions">
+                {selected.direction === "inbound" && (
+                  <button
+                    className="button primary"
+                    onClick={() =>
+                      onCreateBudgetFromSender(
+                        selected.fromName || "",
+                        selected.fromAddress,
+                      )
+                    }
+                  >
+                    Criar orçamento
+                  </button>
+                )}
                 <button className="button soft" onClick={() => startReply(selected)}>
                   Responder
                 </button>
