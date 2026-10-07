@@ -1,12 +1,15 @@
 {
   "name": "mgorcamentos",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "tauri": "tauri --config MG-Orçamento/src-tauri/tauri.conf.json",
+    "tauri:dev": "tauri dev --config MG-Orçamento/src-tauri/tauri.conf.json",
+    "tauri:build": "tauri build --config MG-Orçamento/src-tauri/tauri.conf.json"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
@@ -16,7 +19,12 @@
     "react": "latest",
     "react-dom": "latest",
     "typescript": "latest",
-    "vite": "latest"
+    "vite": "latest",
+    "@aws-sdk/client-s3": "^3.910.0",
+    "@aws-sdk/client-ses": "^3.910.0",
+    "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-process": "^2",
+    "@tauri-apps/plugin-updater": "^2"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.11.4",

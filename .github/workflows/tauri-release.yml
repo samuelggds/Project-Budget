@@ -1,0 +1,45 @@
+name: Release Tauri
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  publish-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install root frontend dependencies
+        run: npm install --no-audit --no-fund
+      - name: Install Tauri project dependencies
+        run: npm install --prefix MG-Orçamento --no-audit --no-fund
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Build and publish signed updater
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          TAURI_UPDATER_PUBLIC_KEY: ${{ secrets.TAURI_UPDATER_PUBLIC_KEY }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_ADMIN_EMAIL: ${{ secrets.VITE_ADMIN_EMAIL }}
+          VITE_API_URL: https://mgrefrigeracoes.com.br
+        with:
+          projectPath: MG-Orçamento
+          tagName: v__VERSION__
+          releaseName: "MG Orçamentos v__VERSION__"
+          releaseBody: "Atualização do aplicativo MG Orçamentos."
+          releaseDraft: false
+          prerelease: false
+          uploadUpdaterJson: true
+          updaterJsonPreferNsis: true

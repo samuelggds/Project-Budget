@@ -12,7 +12,7 @@ export const DEFAULT_COMPANY_SETTINGS: CompanySettings = {
   companyName: "MG Refrigeração",
   cnpj: "31.263.081/0001-46",
   phone: "(85) 98932-3113",
-  email: "matheuslegend10@icloud.com",
+  email: "contato@mgrefrigeracoes.com.br",
   address: "Rua Francisco Calaça, 1688 — Fortaleza/CE — CEP 60.336-232",
 };
 
