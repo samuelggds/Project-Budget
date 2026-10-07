@@ -4,9 +4,9 @@
   "version": "1.1.0",
   "identifier": "com.samuel.mg-orcamento",
   "build": {
-    "beforeDevCommand": "npm --prefix ../.. run dev -- --host 0.0.0.0",
+    "beforeDevCommand": "npm --prefix .. run dev -- --host 0.0.0.0",
     "devUrl": "http://localhost:5173",
-    "beforeBuildCommand": "npm --prefix ../.. run build",
+    "beforeBuildCommand": "npm --prefix .. run build",
     "frontendDist": "../../dist"
   },
   "app": {
