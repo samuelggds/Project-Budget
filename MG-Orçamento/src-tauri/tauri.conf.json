@@ -40,7 +40,6 @@
   },
   "plugins": {
     "updater": {
-      "active": true,
       "endpoints": [
         "https://mgrefrigeracoes.com.br/api/updates/latest"
       ],
