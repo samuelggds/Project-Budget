@@ -22,3 +22,12 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Typecheck and build
         run: npm run build
+      - name: Validate server and Lambda syntax
+        run: |
+          node --check api/_lib/security.mjs
+          node --check api/mail/send.mjs
+          node --check api/mail/attachment.mjs
+          node --check api/updates/latest.mjs
+          node --check api/updates/download.mjs
+          node --check aws/lambda/inbox-worker/index.mjs
+          node --check aws/lambda/feedback-worker/index.mjs
