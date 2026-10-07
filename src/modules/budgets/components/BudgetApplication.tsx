@@ -36,6 +36,7 @@ import {
   saveServiceToDatabase,
 } from "../../shared/services/supabaseDatabase";
 import { SmoothSelect } from "../../shared/components/SmoothSelect";
+import { MailCenter } from "../../mail/components/MailCenter";
 import {
   DEFAULT_COMPANY_SETTINGS,
   loadCompanySettings,
@@ -50,7 +51,7 @@ const withDefaultItemUnit = (current: Budget): Budget => ({
 
 export function BudgetApplication() {
   const [tab, setTab] = useState<
-    "new" | "saved" | "clients" | "services" | "splits" | "settings"
+    "new" | "saved" | "clients" | "services" | "splits" | "mail" | "settings"
   >("new");
   const [preview, setPreview] = useState(false);
   const [budget, setBudget] = useState<Budget>(createInitialBudget);
@@ -604,6 +605,12 @@ export function BudgetApplication() {
             <i>%</i>Splits
           </button>
           <button
+            className={tab === "mail" ? "active" : ""}
+            onClick={() => setTab("mail")}
+          >
+            <i>✉</i>E-mail
+          </button>
+          <button
             className={tab === "settings" ? "active" : ""}
             onClick={() => setTab("settings")}
           >
@@ -648,7 +655,9 @@ export function BudgetApplication() {
                       ? "Catálogo de serviços"
                       : tab === "splits"
                         ? "Splits dos orçamentos"
-                        : "Configurações"}
+                        : tab === "mail"
+                          ? "E-mail corporativo"
+                          : "Configurações"}
             </h1>
             <p>
               {tab === "new"
@@ -661,7 +670,9 @@ export function BudgetApplication() {
                       ? "Cadastre códigos, descrições e valores para preenchimento automático."
                       : tab === "splits"
                         ? "Acompanhe os 5% calculados sobre os orçamentos aprovados."
-                        : "Personalize os dados exibidos nos orçamentos."}
+                        : tab === "mail"
+                          ? "Envie orçamentos e gerencie contato@mgrefrigeracoes.com.br sem sair do Budget."
+                          : "Personalize os dados exibidos nos orçamentos."}
             </p>
           </div>
           {tab === "saved" && (
@@ -1794,6 +1805,10 @@ export function BudgetApplication() {
               </div>
             )}
           </section>
+        )}
+
+        {tab === "mail" && (
+          <MailCenter budgets={saved} clients={clients} notify={notify} />
         )}
 
         {tab === "settings" && (
