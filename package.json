@@ -22,12 +22,12 @@
     "vite": "latest",
     "@aws-sdk/client-s3": "^3.910.0",
     "@aws-sdk/client-ses": "^3.910.0",
-    "@tauri-apps/api": "^2",
+    "@tauri-apps/api": "2.11.5",
     "@tauri-apps/plugin-process": "^2",
     "@tauri-apps/plugin-updater": "^2"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2.11.4",
+    "@tauri-apps/cli": "2.11.4",
     "@types/react": "latest",
     "@types/react-dom": "latest"
   }
