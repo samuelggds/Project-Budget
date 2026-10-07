@@ -1,0 +1,9 @@
+{
+  "name": "mgrefrigeracoes-mail-inbox-worker",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.910.0",
+    "mailparser": "^3.7.4"
+  }
+}
