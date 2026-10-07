@@ -6,13 +6,7 @@ pub fn run() {
 
     #[cfg(desktop)]
     {
-        let mut updater = tauri_plugin_updater::Builder::new();
-        if let Some(public_key) = option_env!("TAURI_UPDATER_PUBLIC_KEY") {
-            if !public_key.trim().is_empty() {
-                updater = updater.pubkey(public_key);
-            }
-        }
-        builder = builder.plugin(updater.build());
+        builder = builder.plugin(tauri_plugin_updater::Builder::new().build());
     }
 
     builder
