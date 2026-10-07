@@ -162,12 +162,11 @@ No GitHub, configure os secrets:
 
 - `TAURI_SIGNING_PRIVATE_KEY` = conteúdo ou caminho suportado da chave privada no workflow
 - `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`
-- `TAURI_UPDATER_PUBLIC_KEY` = chave pública gerada
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_PUBLISHABLE_KEY`
 - `VITE_ADMIN_EMAIL`
 
-A chave pública não é secreta, porém o workflow a fornece no build para que o binário valide assinaturas.
+A chave pública já fica fixada em `MG-Orçamento/src-tauri/tauri.conf.json`; ela não é secreta e o app usa esse valor para validar as assinaturas.
 
 ## 8. Publicação de uma atualização
 
