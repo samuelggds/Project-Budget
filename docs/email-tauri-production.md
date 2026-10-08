@@ -1,13 +1,13 @@
-# E-mail corporativo + atualizações Tauri
+# E-mail corporativo + atualizacoes Tauri
 
-Este documento fecha a configuração de produção do Budget para:
+Este documento fecha a configuracao de producao do Budget para:
 
 - receber em `contato@mgrefrigeracoes.com.br`;
 - ler e organizar mensagens dentro do Budget;
 - responder, encaminhar, salvar rascunhos e baixar anexos;
-- enviar orçamentos em PDF pelo Amazon SES;
-- tratar bounce/complaint e bloquear destinatários problemáticos;
-- avisar o usuário do app Tauri quando existir uma nova versão assinada.
+- enviar orcamentos em PDF pelo Amazon SES;
+- tratar delivery, bounce e complaint e bloquear destinatarios problematicos;
+- avisar o usuario do app Tauri quando existir uma nova versao assinada.
 
 ## 1. Banco Supabase
 
@@ -15,20 +15,49 @@ Execute **uma vez** no SQL Editor:
 
 `supabase/mail-migration.sql`
 
-As tabelas são:
+As tabelas sao:
 
 - `mail_messages`
 - `mail_attachments`
 - `mail_events`
 - `mail_blocklist`
 
-O navegador acessa essas tabelas apenas com sessão autenticada. A chave `SUPABASE_SERVICE_ROLE_KEY` é usada somente pelos workers Lambda e nunca deve ser exposta em variáveis `VITE_*`.
+O navegador acessa essas tabelas apenas com sessao autenticada. As Lambdas usam uma Secret Key server-side do Supabase armazenada somente no AWS Secrets Manager.
 
-## 2. Vercel
+Nunca exponha a Secret Key em variaveis `VITE_*`, no frontend, no repositorio ou em logs.
 
-Cadastre as variáveis do arquivo `.env.example`.
+## 2. Segredo server-side do Supabase
 
-Obrigatórias para o e-mail:
+Segredo no AWS Secrets Manager:
+
+`mgrefrigeracoes/budget/supabase`
+
+Formato:
+
+```json
+{
+  "SUPABASE_URL": "https://SEU-PROJETO.supabase.co",
+  "SUPABASE_SECRET_KEY": "sb_secret_..."
+}
+```
+
+As Lambdas recebem somente:
+
+```text
+SUPABASE_SECRET_ID=mgrefrigeracoes/budget/supabase
+```
+
+IAM minimo das Lambdas:
+
+- `secretsmanager:GetSecretValue` somente nesse segredo.
+
+As chaves modernas `sb_secret_...` sao enviadas ao Data API pelo header `apikey`. Elas nao sao JWT e nao devem ser enviadas como `Authorization: Bearer`.
+
+## 3. Vercel
+
+Cadastre as variaveis do arquivo `.env.example`.
+
+Obrigatorias para o e-mail:
 
 - `SUPABASE_URL`
 - `SUPABASE_PUBLISHABLE_KEY`
@@ -40,83 +69,108 @@ Obrigatórias para o e-mail:
 - `SES_FROM_EMAIL=contato@mgrefrigeracoes.com.br`
 - `SES_FROM_NAME=MG Refrigerações`
 
-Para o atualizador do repositório privado:
+Para o atualizador do repositorio privado:
 
 - `GITHUB_RELEASES_TOKEN`
 
-Use um token GitHub fine-grained somente leitura, restrito ao repositório `Project-Budget`, com acesso mínimo necessário para ler metadata/conteúdo/releases. O token fica somente na Vercel. Ele nunca é enviado ao app Tauri.
+Use um token GitHub fine-grained somente leitura, restrito ao repositorio `Project-Budget`, com acesso minimo necessario para ler metadata/conteudo/releases. O token fica somente na Vercel.
 
 ### IAM da Vercel
 
-Crie credenciais IAM específicas para o Budget. Não use usuário root e não reutilize credenciais administrativas.
+Crie credenciais IAM especificas para o Budget. Nao use usuario root e nao reutilize credenciais administrativas.
 
-Permissões mínimas:
+Permissoes minimas:
 
 - SES: `ses:SendRawEmail` para a identidade verificada de `mgrefrigeracoes.com.br`;
 - S3: `s3:GetObject` apenas em `inbox/attachments/*` do bucket de e-mail.
 
-## 3. Worker de entrada
+## 4. Worker de entrada
 
-Código:
+Codigo:
 
-`aws/lambda/inbox-worker/`
+`aws/lambda/inbox-worker/index.mjs`
 
-Runtime recomendado: Node.js atual suportado pela AWS Lambda.
+Runtime: Node.js atual suportado pela AWS Lambda.
 
-Variáveis:
+Variaveis:
 
 - `AWS_REGION=sa-east-1`
-- `SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
+- `SUPABASE_SECRET_ID=mgrefrigeracoes/budget/supabase`
 
-Conecte a Lambda à fila:
+Conecte a Lambda a fila:
 
 `mgrefrigeracoes-mail-inbox-prod`
 
-Configuração recomendada do gatilho:
+Configuracao atual recomendada:
 
-- batch pequeno;
-- partial batch response quando habilitado;
-- concorrência suficiente para baixo volume;
-- DLQ/redrive já existente na fila.
+- batch size: `1`;
+- batching window: `0`;
+- partial batch response habilitado;
+- timeout da Lambda: `30 segundos`;
+- visibility timeout da fila: `3 minutos`;
+- DLQ: `mgrefrigeracoes-mail-dlq-prod`;
+- maxReceiveCount: `5`.
 
 IAM da Lambda:
 
 - `s3:GetObject` em `inbox/raw/*`;
 - `s3:PutObject` em `inbox/attachments/*`;
+- `sqs:ReceiveMessage`, `sqs:DeleteMessage` e `sqs:GetQueueAttributes` na fila de entrada;
+- `secretsmanager:GetSecretValue` somente no segredo do Supabase;
 - logs do CloudWatch.
-
-O worker é idempotente por `message_id` e usa chaves determinísticas para anexos, evitando duplicação em retries.
-
-## 4. Worker de feedback do SES
-
-Código:
-
-`aws/lambda/feedback-worker/index.mjs`
-
-Variáveis:
-
-- `SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
-
-Conecte à fila:
-
-`mgrefrigeracoes-ses-feedback-queue-prod`
 
 O worker:
 
-- marca mensagens como `bounced`, `complained` ou `delivered`;
-- grava eventos em `mail_events`;
-- adiciona bounce permanente e complaint à `mail_blocklist`;
-- o endpoint de envio recusa destinatários existentes nessa blocklist.
+- e idempotente por `message_id`;
+- usa chaves deterministicas para anexos;
+- processa eventos SQS individualmente;
+- retorna `batchItemFailures` para retries seguros;
+- nao registra corpo, remetente ou anexos no CloudWatch.
 
-Para registrar **Entregue**, configure no SES a notificação **Delivery** para o mesmo tópico:
+## 5. Worker de feedback do SES
+
+Codigo:
+
+`aws/lambda/feedback-worker/index.mjs`
+
+Variaveis:
+
+- `AWS_REGION=sa-east-1`
+- `SUPABASE_SECRET_ID=mgrefrigeracoes/budget/supabase`
+
+Conecte a Lambda a fila:
+
+`mgrefrigeracoes-ses-feedback-queue-prod`
+
+DLQ:
+
+`mgrefrigeracoes-ses-feedback-dlq-prod`
+
+O worker:
+
+- marca mensagens como `delivered`, `bounced` ou `complained`;
+- grava eventos em `mail_events`;
+- adiciona bounce permanente e complaint a `mail_blocklist`;
+- retorna `batchItemFailures` para que somente itens com erro sejam tentados novamente;
+- nao registra payload completo ou dados sensiveis no CloudWatch.
+
+O endpoint de envio recusa destinatarios existentes na blocklist.
+
+Configure no SES o mesmo topico SNS para:
+
+- Delivery;
+- Bounce;
+- Complaint.
+
+Topico:
 
 `mgrefrigeracoes-ses-feedback-prod`
 
-Bounce e Complaint já usam esse tópico.
+Fila:
 
-## 5. Painel de e-mail
+`mgrefrigeracoes-ses-feedback-queue-prod`
+
+## 6. Painel de e-mail
 
 O menu **E-mail** do Budget oferece:
 
@@ -131,24 +185,42 @@ O menu **E-mail** do Budget oferece:
 - responder a todos
 - encaminhar
 - anexos
-- envio de orçamento em PDF
+- envio de orcamento em PDF
 - status de entrega/falha
 
-Mensagens recebidas são exibidas como texto simples no painel. HTML recebido não é injetado no DOM, evitando XSS originado em e-mail.
+Mensagens recebidas sao exibidas como texto simples no painel. HTML recebido nao e injetado no DOM, evitando XSS originado em e-mail.
 
-## 6. Sandbox do SES
+O envio exige sessao autenticada e validacao server-side do administrador.
 
-Enquanto a conta estiver no sandbox, o painel pode ser implantado normalmente.
+## 7. Sandbox do SES
 
-O recebimento continua funcionando. O envio real para destinatários não verificados só passa a funcionar após a AWS conceder production access.
+Enquanto a conta estiver no sandbox:
 
-Nenhuma alteração de código é necessária quando o SES sair do sandbox.
+- recebimento funciona normalmente;
+- o painel pode ser implantado;
+- envio so funciona para destinatarios permitidos pelas regras do sandbox.
 
-## 7. Assinatura do atualizador Tauri
+Quando a AWS conceder production access na regiao `sa-east-1`, nenhuma mudanca de codigo sera necessaria para enviar a destinatarios comuns.
 
-O updater do Tauri exige assinatura criptográfica e **não permite desativar essa verificação**.
+## 8. Checklist antes de solicitar nova revisao da AWS
 
-Gere a chave uma única vez em uma máquina confiável:
+Antes de reabrir o caso de Production Access, validar:
+
+1. dominio `mgrefrigeracoes.com.br` verificado;
+2. DKIM bem-sucedido;
+3. entrada real funcionando SES -> S3 -> SQS -> Lambda -> Supabase;
+4. worker de feedback implantado e ligado a fila de feedback;
+5. Delivery, Bounce e Complaint publicados no SNS;
+6. bounce permanente e complaint inseridos na `mail_blocklist`;
+7. envio recusando destinatarios da blocklist;
+8. volume inicial informado como baixo e transacional;
+9. nenhum uso de listas compradas, scraping ou marketing nao solicitado.
+
+## 9. Assinatura do atualizador Tauri
+
+O updater do Tauri exige assinatura criptografica e **nao permite desativar essa verificacao**.
+
+Gere a chave uma unica vez em uma maquina confiavel:
 
 PowerShell:
 
@@ -156,28 +228,28 @@ PowerShell:
 npm run tauri signer generate -- -w "$HOME\.tauri\mg-orcamentos.key"
 ```
 
-Guarde o arquivo privado fora do repositório e faça backup seguro. Perder essa chave impede publicar atualizações para instalações existentes.
+Guarde o arquivo privado fora do repositorio e faca backup seguro.
 
 No GitHub, configure os secrets:
 
-- `TAURI_SIGNING_PRIVATE_KEY` = conteúdo ou caminho suportado da chave privada no workflow
+- `TAURI_SIGNING_PRIVATE_KEY`
 - `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_PUBLISHABLE_KEY`
 - `VITE_ADMIN_EMAIL`
 
-A chave pública já fica fixada em `MG-Orçamento/src-tauri/tauri.conf.json`; ela não é secreta e o app usa esse valor para validar as assinaturas.
+A chave publica fica fixada em `MG-Orçamento/src-tauri/tauri.conf.json` e e usada pelo app para validar as assinaturas.
 
-## 8. Publicação de uma atualização
+## 10. Publicacao de uma atualizacao
 
 Antes de publicar:
 
-1. aumente a versão em:
+1. aumente a versao em:
    - `package.json`
    - `MG-Orçamento/src-tauri/tauri.conf.json`
    - `MG-Orçamento/src-tauri/Cargo.toml`
-2. faça o merge somente após CI aprovado;
-3. crie/push uma tag com a mesma versão, por exemplo `v1.1.0`.
+2. faca o merge somente apos CI aprovado;
+3. crie/push uma tag com a mesma versao, por exemplo `v1.1.0`.
 
 O workflow `.github/workflows/tauri-release.yml`:
 
@@ -191,17 +263,13 @@ O app instalado consulta:
 
 `https://mgrefrigeracoes.com.br/api/updates/latest`
 
-A Vercel acessa a release privada usando o token apenas no servidor e entrega o manifesto/instalador ao updater sem expor o token do GitHub.
-
-Ao detectar versão maior, o Budget mostra **Nova versão do MG Orçamentos disponível** com o botão **Atualizar agora**. O app também verifica novamente a cada 30 minutos.
-
-## 9. Regra de segurança para releases
+## 11. Regra de seguranca
 
 Nunca:
 
-- comite a chave privada do Tauri;
-- coloque `AWS_SECRET_ACCESS_KEY`, service role do Supabase ou token GitHub em `VITE_*`;
-- publique artefato de atualização sem assinatura;
-- desabilite a verificação de assinatura para contornar erro de release.
+- comite Secret Key do Supabase;
+- coloque `AWS_SECRET_ACCESS_KEY`, Secret Key do Supabase ou token GitHub em `VITE_*`;
+- publique artefato de atualizacao sem assinatura;
+- desabilite a verificacao de assinatura para contornar erro de release.
 
-Se uma release falhar, corrija o pipeline e publique uma versão nova.
+Se uma release falhar, corrija o pipeline e publique uma versao nova.
