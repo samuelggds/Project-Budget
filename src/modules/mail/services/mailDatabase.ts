@@ -119,6 +119,23 @@ export async function moveMessage(id: string, folder: MailFolder) {
   throwIf(error);
 }
 
+export async function deleteMessagePermanently(id: string) {
+  const { error } = await supabase
+    .from("mail_messages")
+    .delete()
+    .eq("id", id)
+    .eq("folder", "trash");
+  throwIf(error);
+}
+
+export async function emptyTrash() {
+  const { error } = await supabase
+    .from("mail_messages")
+    .delete()
+    .eq("folder", "trash");
+  throwIf(error);
+}
+
 export async function saveDraft(draft: MailDraft) {
   const now = new Date().toISOString();
   const id = draft.id || crypto.randomUUID();
