@@ -5,7 +5,7 @@ alter table public.mail_events
   add column if not exists provider_event_id text;
 
 create unique index if not exists mail_events_provider_event_recipient_uidx
-  on public.mail_events (provider_event_id, coalesce(recipient, ''))
+  on public.mail_events (provider_event_id, recipient)
   where provider_event_id is not null;
 
 alter table public.mail_blocklist
