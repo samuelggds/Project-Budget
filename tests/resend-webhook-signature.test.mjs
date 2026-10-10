@@ -71,3 +71,8 @@ test("rejects stale signatures", () => {
     false,
   );
 });
+
+
+test("webhook module keeps signature verification export available", () => {
+  assert.equal(typeof verifySvixSignature, "function");
+});
