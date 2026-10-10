@@ -34,6 +34,15 @@ function supabaseConfig() {
   return { url, key };
 }
 
+function supabaseSecretConfig() {
+  const url = String(process.env.SUPABASE_URL || "").replace(/\/+$/, "");
+  const key = String(process.env.SUPABASE_SECRET_KEY || "");
+  if (!url || !key) throw new Error("Configuração segura do Supabase ausente.");
+  if (!url.startsWith("https://")) throw new Error("SUPABASE_URL inválida.");
+  if (!key.startsWith("sb_secret_")) throw new Error("SUPABASE_SECRET_KEY inválida.");
+  return { url, key };
+}
+
 export async function requireAdmin(req, res) {
   const header = String(req.headers.authorization || "");
   const token = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
@@ -105,6 +114,32 @@ export async function supabaseRest(
   if (!response.ok) {
     const detail = await response.text();
     throw new Error("Supabase " + response.status + ": " + detail.slice(0, 400));
+  }
+
+  if (response.status === 204) return null;
+  const text = await response.text();
+  return text ? JSON.parse(text) : null;
+}
+
+export async function supabaseSecretRest(
+  path,
+  { method = "GET", body, prefer = "", headers = {} } = {},
+) {
+  const { url, key } = supabaseSecretConfig();
+  const response = await fetch(url + "/rest/v1/" + path, {
+    method,
+    headers: {
+      apikey: key,
+      ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
+      ...(prefer ? { Prefer: prefer } : {}),
+      ...headers,
+    },
+    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+  });
+
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error("Supabase server " + response.status + ": " + detail.slice(0, 400));
   }
 
   if (response.status === 204) return null;

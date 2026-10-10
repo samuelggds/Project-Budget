@@ -1,8 +1,7 @@
 import crypto from "node:crypto";
-import { SESClient, SendRawEmailCommand } from "@aws-sdk/client-ses";
 import { applyCors, requireAdmin, sendJson, supabaseRest } from "../_lib/security.mjs";
 
-const ses = new SESClient({ region: process.env.AWS_REGION || "sa-east-1" });
+const RESEND_API_URL = "https://api.resend.com/emails";
 const MAX_ATTACHMENTS = 10;
 const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
 
@@ -16,61 +15,22 @@ function validEmail(value) {
 function normalizeRecipients(value) {
   return [...new Set((Array.isArray(value) ? value : []).map(validEmail).filter(Boolean))].slice(0, 25);
 }
-function encodeHeader(value) {
-  const clean = sanitizeHeader(value, 998);
-  return /^[\x20-\x7E]*$/.test(clean) ? clean : "=?UTF-8?B?" + Buffer.from(clean).toString("base64") + "?=";
-}
 function escapeHtml(value) {
   return String(value || "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
 }
 function safeFilename(value) {
   return String(value || "arquivo").replace(/[\\/:*?"<>|\r\n]/g, "_").trim().slice(0, 120) || "arquivo";
 }
-function wrapBase64(value) {
-  return value.match(/.{1,76}/g)?.join("\r\n") || "";
+function requireServerEnv(name) {
+  const value = String(process.env[name] || "").trim();
+  if (!value) throw new Error(name + " ausente.");
+  return value;
 }
-function buildRawEmail({fromName,fromEmail,to,cc,subject,text,inReplyTo,references,attachments}) {
-  const mixedBoundary = "mixed_" + crypto.randomUUID().replaceAll("-", "");
-  const altBoundary = "alt_" + crypto.randomUUID().replaceAll("-", "");
-  const headers = [
-    "From: " + encodeHeader(fromName) + " <" + fromEmail + ">",
-    "To: " + to.join(", "),
-    ...(cc.length ? ["Cc: " + cc.join(", ")] : []),
-    "Subject: " + encodeHeader(subject),
-    "MIME-Version: 1.0",
-    ...(inReplyTo ? ["In-Reply-To: " + sanitizeHeader(inReplyTo,998)] : []),
-    ...(references?.length ? ["References: " + references.map((x)=>sanitizeHeader(x,998)).join(" ")] : []),
-    'Content-Type: multipart/mixed; boundary="' + mixedBoundary + '"'
-  ];
-  const html = '<div style="font-family:Arial,Helvetica,sans-serif;white-space:pre-wrap;line-height:1.55;color:#172033">' + escapeHtml(text) + "</div>";
-  const parts = [
-    "--"+mixedBoundary,
-    'Content-Type: multipart/alternative; boundary="' + altBoundary + '"',
-    "",
-    "--"+altBoundary,
-    'Content-Type: text/plain; charset="UTF-8"',
-    "Content-Transfer-Encoding: 8bit",
-    "",
-    text,
-    "--"+altBoundary,
-    'Content-Type: text/html; charset="UTF-8"',
-    "Content-Transfer-Encoding: 8bit",
-    "",
-    html,
-    "--"+altBoundary+"--"
-  ];
-  for (const a of attachments) {
-    parts.push(
-      "--"+mixedBoundary,
-      'Content-Type: ' + a.type + '; name="' + encodeHeader(a.name) + '"',
-      "Content-Transfer-Encoding: base64",
-      'Content-Disposition: attachment; filename="' + encodeHeader(a.name) + '"',
-      "",
-      wrapBase64(a.base64)
-    );
-  }
-  parts.push("--"+mixedBoundary+"--","");
-  return Buffer.from([...headers,"",...parts].join("\r\n"),"utf8");
+function resendErrorStatus(status) {
+  if (status === 400 || status === 422) return 400;
+  if (status === 401 || status === 403) return 502;
+  if (status === 429) return 503;
+  return 502;
 }
 
 export default async function handler(req,res) {
@@ -99,29 +59,66 @@ export default async function handler(req,res) {
       const base64=String(item.base64||"").replace(/^data:[^;]+;base64,/,"");
       const buf=Buffer.from(base64,"base64");
       totalBytes+=buf.byteLength;
-      return {name:safeFilename(item.name),type:sanitizeHeader(item.type||"application/octet-stream",100),base64:buf.toString("base64")};
+      return {
+        filename:safeFilename(item.name),
+        content:buf.toString("base64"),
+        content_type:sanitizeHeader(item.type||"application/octet-stream",100),
+      };
     });
     if (totalBytes > MAX_ATTACHMENT_BYTES) return sendJson(res,413,{error:"Anexos acima de 5 MB."});
 
     const blockedRows = await supabaseRest(context,"mail_blocklist?select=email");
     const blocked = new Set((blockedRows||[]).map((x)=>String(x.email||"").toLowerCase()));
     const rejected=all.filter((email)=>blocked.has(email));
-    if (rejected.length) return sendJson(res,409,{error:"Envio bloqueado para: "+rejected.join(", ")+". Endereço com bounce permanente ou reclamação."});
+    if (rejected.length) return sendJson(res,409,{error:"Envio bloqueado para: "+rejected.join(", ")+". Endereço com bounce permanente, supressão ou reclamação."});
 
-    const fromEmail = validEmail(process.env.SES_FROM_EMAIL || "contato@mgrefrigeracoes.com.br");
-    const fromName = sanitizeHeader(process.env.SES_FROM_NAME || "MG Refrigerações",120);
-    if (!fromEmail) throw new Error("SES_FROM_EMAIL inválido.");
+    const apiKey = requireServerEnv("RESEND_API_KEY");
+    const fromEmail = validEmail(process.env.MAIL_FROM_EMAIL || "contato@mgrefrigeracoes.com.br");
+    const fromName = sanitizeHeader(process.env.MAIL_FROM_NAME || "MG Refrigerações",120);
+    if (!fromEmail) throw new Error("MAIL_FROM_EMAIL inválido.");
 
     const inReplyTo=sanitizeHeader(body.inReplyTo||"",998);
     const references=(Array.isArray(body.references)?body.references:[]).map((x)=>sanitizeHeader(x,998)).filter(Boolean).slice(-30);
 
-    const result = await ses.send(new SendRawEmailCommand({
-      Source: fromEmail,
-      Destinations: all,
-      RawMessage:{Data:buildRawEmail({fromName,fromEmail,to,cc,subject,text,inReplyTo,references,attachments})}
-    }));
+    const providerResponse = await fetch(RESEND_API_URL, {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + apiKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: fromName + " <" + fromEmail + ">",
+        to,
+        ...(cc.length ? { cc } : {}),
+        ...(bcc.length ? { bcc } : {}),
+        subject,
+        text,
+        html: '<div style="font-family:Arial,Helvetica,sans-serif;white-space:pre-wrap;line-height:1.55;color:#172033">' + escapeHtml(text) + "</div>",
+        ...(attachments.length ? { attachments } : {}),
+        ...((inReplyTo || references.length) ? {
+          headers: {
+            ...(inReplyTo ? { "In-Reply-To": inReplyTo } : {}),
+            ...(references.length ? { References: references.join(" ") } : {}),
+          },
+        } : {}),
+      }),
+    });
 
-    const providerMessageId=String(result.MessageId||crypto.randomUUID());
+    const providerPayload = await providerResponse.json().catch(() => ({}));
+    if (!providerResponse.ok) {
+      console.error("RESEND_SEND_FAILED", {
+        status: providerResponse.status,
+        providerCode: sanitizeHeader(providerPayload?.name || providerPayload?.code || "",80),
+      });
+      return sendJson(res,resendErrorStatus(providerResponse.status),{
+        error:"Não foi possível enviar o e-mail neste momento.",
+        code:"MAIL_PROVIDER_ERROR",
+      });
+    }
+
+    const providerMessageId=String(providerPayload.id||"").trim();
+    if (!providerMessageId) throw new Error("Resend não retornou id da mensagem.");
+
     const threadId=sanitizeHeader(body.threadId||crypto.randomUUID(),200);
     const now=new Date().toISOString();
     const inserted=await supabaseRest(context,"mail_messages?on_conflict=message_id",{
@@ -138,7 +135,9 @@ export default async function handler(req,res) {
     });
     return sendJson(res,200,{ok:true,messageId:providerMessageId,message:inserted?.[0]||null});
   } catch (error) {
-    console.error("MAIL_SEND_FAILED",error);
+    console.error("MAIL_SEND_FAILED", {
+      error: error instanceof Error ? error.message : "Erro desconhecido",
+    });
     return sendJson(res,500,{error:"Não foi possível enviar o e-mail.",code:"MAIL_SEND_FAILED"});
   }
 }

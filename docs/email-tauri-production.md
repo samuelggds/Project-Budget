@@ -2,177 +2,185 @@
 
 Este documento fecha a configuracao de producao do Budget para:
 
-- receber em `contato@mgrefrigeracoes.com.br`;
+- receber em `contato@mgrefrigeracoes.com.br` pelo Amazon SES;
 - ler e organizar mensagens dentro do Budget;
 - responder, encaminhar, salvar rascunhos e baixar anexos;
-- enviar orcamentos em PDF pelo Amazon SES;
-- tratar delivery, bounce e complaint e bloquear destinatarios problematicos;
+- enviar orcamentos em PDF pelo Resend;
+- tratar delivery, bounce, complaint, suppression e falha;
+- bloquear automaticamente destinatarios problematicos;
 - avisar o usuario do app Tauri quando existir uma nova versao assinada.
 
 ## 1. Banco Supabase
 
-Execute **uma vez** no SQL Editor:
+Execute uma vez:
 
 `supabase/mail-migration.sql`
 
-As tabelas sao:
+Ao migrar o outbound para Resend, execute tambem:
+
+`supabase/resend-feedback-migration.sql`
+
+Tabelas:
 
 - `mail_messages`
 - `mail_attachments`
 - `mail_events`
 - `mail_blocklist`
 
-O navegador acessa essas tabelas apenas com sessao autenticada. As Lambdas usam uma Secret Key server-side do Supabase armazenada somente no AWS Secrets Manager.
+O navegador acessa essas tabelas apenas com sessao autenticada.
 
-Nunca exponha a Secret Key em variaveis `VITE_*`, no frontend, no repositorio ou em logs.
+As Lambdas AWS usam a Secret Key do Supabase armazenada no AWS Secrets Manager.
+O webhook Resend usa `SUPABASE_SECRET_KEY` somente na Vercel, server-side, apos validar criptograficamente a assinatura Svix.
 
-## 2. Segredo server-side do Supabase
+Nunca exponha `SUPABASE_SECRET_KEY`, `RESEND_API_KEY`, `RESEND_WEBHOOK_SECRET` ou credenciais AWS em variaveis `VITE_*`, frontend, repositorio ou logs.
 
-Segredo no AWS Secrets Manager:
+## 2. Recebimento de e-mail continua na AWS
 
-`mgrefrigeracoes/budget/supabase`
+O recebimento permanece:
 
-Formato:
+`Internet -> Amazon SES -> S3 -> SQS -> Lambda inbox -> Supabase -> Budget`
 
-```json
-{
-  "SUPABASE_URL": "https://SEU-PROJETO.supabase.co",
-  "SUPABASE_SECRET_KEY": "sb_secret_..."
-}
-```
+Worker:
 
-As Lambdas recebem somente:
+`aws/lambda/inbox-worker/index.mjs`
 
-```text
-SUPABASE_SECRET_ID=mgrefrigeracoes/budget/supabase
-```
+Infra atual:
 
-IAM minimo das Lambdas:
+- bucket S3 de e-mail;
+- fila `mgrefrigeracoes-mail-inbox-prod`;
+- DLQ `mgrefrigeracoes-mail-dlq-prod`;
+- Lambda `mgrefrigeracoes-mail-ingest-prod`;
+- segredo `mgrefrigeracoes/budget/supabase` no Secrets Manager.
 
-- `secretsmanager:GetSecretValue` somente nesse segredo.
+O worker de entrada continua inalterado e independente do provedor usado para envio.
 
-As chaves modernas `sb_secret_...` sao enviadas ao Data API pelo header `apikey`. Elas nao sao JWT e nao devem ser enviadas como `Authorization: Bearer`.
+## 3. Envio de e-mail via Resend
 
-## 3. Vercel
+Endpoint:
 
-Cadastre as variaveis do arquivo `.env.example`.
+`api/mail/send.mjs`
 
-Obrigatorias para o e-mail:
+O envio continua exigindo:
 
+- sessao Supabase valida;
+- usuario igual a `ADMIN_EMAIL`;
+- destinatarios validos;
+- bloqueio de enderecos existentes em `mail_blocklist`;
+- limite de destinatarios e anexos;
+- nenhum segredo enviado ao navegador.
+
+Variaveis Vercel:
+
+- `RESEND_API_KEY`
+- `MAIL_FROM_EMAIL=contato@mgrefrigeracoes.com.br`
+- `MAIL_FROM_NAME=MG Refrigerações`
 - `SUPABASE_URL`
 - `SUPABASE_PUBLISHABLE_KEY`
 - `ADMIN_EMAIL`
+
+O endpoint chama somente a API HTTPS do Resend e persiste o ID retornado em `provider_message_id`.
+
+## 4. Webhook Resend
+
+Endpoint publico:
+
+`https://mgrefrigeracoes.com.br/api/mail/resend-webhook`
+
+Arquivo:
+
+`api/mail/resend-webhook.mjs`
+
+Variaveis Vercel adicionais:
+
+- `RESEND_WEBHOOK_SECRET`
+- `SUPABASE_SECRET_KEY`
+
+Eventos recomendados no Resend:
+
+- `email.delivered`
+- `email.bounced`
+- `email.complained`
+- `email.failed`
+- `email.suppressed`
+
+Seguranca do webhook:
+
+- body parser desabilitado;
+- assinatura `svix-id`, `svix-timestamp` e `svix-signature` validada sobre o corpo bruto;
+- tolerancia maxima de 5 minutos para reduzir replay;
+- comparacao de assinatura em tempo constante;
+- nenhuma escrita no Supabase ocorre antes da assinatura ser validada;
+- eventos sao idempotentes por `provider_event_id + recipient`.
+
+Comportamento:
+
+- `email.delivered` -> `delivered`;
+- `email.bounced` -> `bounced`;
+- `email.complained` -> `complained`;
+- `email.failed` -> `failed`;
+- `email.suppressed` -> `bounced`;
+- bounce permanente, complaint e suppression entram em `mail_blocklist`.
+
+## 5. Vercel
+
+Variaveis obrigatorias:
+
+- `SUPABASE_URL`
+- `SUPABASE_PUBLISHABLE_KEY`
+- `SUPABASE_SECRET_KEY`
+- `ADMIN_EMAIL`
+- `RESEND_API_KEY`
+- `RESEND_WEBHOOK_SECRET`
+- `MAIL_FROM_EMAIL=contato@mgrefrigeracoes.com.br`
+- `MAIL_FROM_NAME=MG Refrigerações`
 - `AWS_REGION=sa-east-1`
 - `AWS_ACCESS_KEY_ID`
 - `AWS_SECRET_ACCESS_KEY`
 - `MAIL_BUCKET=mgrefrigeracoes-mail-prod-900558045319-sa-east-1-an`
-- `SES_FROM_EMAIL=contato@mgrefrigeracoes.com.br`
-- `SES_FROM_NAME=MG Refrigerações`
 
-Para o atualizador do repositorio privado:
+As credenciais AWS na Vercel continuam somente porque o endpoint de anexos recebidos precisa ler objetos no S3.
+Depois da migracao do outbound, remova a permissao `ses:SendRawEmail` do usuario IAM da Vercel.
 
-- `GITHUB_RELEASES_TOKEN`
+Permissao AWS minima da Vercel apos o cutover:
 
-Use um token GitHub fine-grained somente leitura, restrito ao repositorio `Project-Budget`, com acesso minimo necessario para ler metadata/conteudo/releases. O token fica somente na Vercel.
-
-### IAM da Vercel
-
-Crie credenciais IAM especificas para o Budget. Nao use usuario root e nao reutilize credenciais administrativas.
-
-Permissoes minimas:
-
-- SES: `ses:SendRawEmail` para a identidade verificada de `mgrefrigeracoes.com.br`;
 - S3: `s3:GetObject` apenas em `inbox/attachments/*` do bucket de e-mail.
 
-## 4. Worker de entrada
+## 6. DNS do dominio no Resend
 
-Codigo:
+Antes de ativar envio real:
 
-`aws/lambda/inbox-worker/index.mjs`
+1. adicione `mgrefrigeracoes.com.br` no Resend;
+2. publique exatamente os registros DNS fornecidos pelo Resend;
+3. aguarde o dominio ficar verificado;
+4. mantenha os registros existentes do SES que ainda forem necessarios para recebimento;
+5. nao substitua o MX de recebimento do dominio principal sem planejar a migracao do inbound.
 
-Runtime: Node.js atual suportado pela AWS Lambda.
+O remetente esperado permanece:
 
-Variaveis:
+`MG Refrigerações <contato@mgrefrigeracoes.com.br>`
 
-- `AWS_REGION=sa-east-1`
-- `SUPABASE_SECRET_ID=mgrefrigeracoes/budget/supabase`
+## 7. Cutover seguro
 
-Conecte a Lambda a fila:
+Ordem recomendada:
 
-`mgrefrigeracoes-mail-inbox-prod`
+1. executar `supabase/resend-feedback-migration.sql`;
+2. verificar dominio no Resend;
+3. adicionar secrets na Vercel;
+4. fazer deploy desta branch;
+5. criar o webhook Resend apontando para `/api/mail/resend-webhook`;
+6. selecionar os cinco eventos de feedback;
+7. testar envio para endereco controlado;
+8. confirmar `sent -> delivered` no Supabase;
+9. testar bounce com endereco de teste suportado pelo provedor;
+10. confirmar blocklist;
+11. somente depois remover `ses:SendRawEmail` do IAM da Vercel;
+12. manter o SES apenas para inbound.
 
-Configuracao atual recomendada:
+Nao desative a infraestrutura de feedback SES antes de confirmar o Resend em producao; ela pode ser removida depois do cutover validado.
 
-- batch size: `1`;
-- batching window: `0`;
-- partial batch response habilitado;
-- timeout da Lambda: `30 segundos`;
-- visibility timeout da fila: `3 minutos`;
-- DLQ: `mgrefrigeracoes-mail-dlq-prod`;
-- maxReceiveCount: `5`.
+## 8. Painel de e-mail
 
-IAM da Lambda:
-
-- `s3:GetObject` em `inbox/raw/*`;
-- `s3:PutObject` em `inbox/attachments/*`;
-- `sqs:ReceiveMessage`, `sqs:DeleteMessage` e `sqs:GetQueueAttributes` na fila de entrada;
-- `secretsmanager:GetSecretValue` somente no segredo do Supabase;
-- logs do CloudWatch.
-
-O worker:
-
-- e idempotente por `message_id`;
-- usa chaves deterministicas para anexos;
-- processa eventos SQS individualmente;
-- retorna `batchItemFailures` para retries seguros;
-- nao registra corpo, remetente ou anexos no CloudWatch.
-
-## 5. Worker de feedback do SES
-
-Codigo:
-
-`aws/lambda/feedback-worker/index.mjs`
-
-Variaveis:
-
-- `AWS_REGION=sa-east-1`
-- `SUPABASE_SECRET_ID=mgrefrigeracoes/budget/supabase`
-
-Conecte a Lambda a fila:
-
-`mgrefrigeracoes-ses-feedback-queue-prod`
-
-DLQ:
-
-`mgrefrigeracoes-ses-feedback-dlq-prod`
-
-O worker:
-
-- marca mensagens como `delivered`, `bounced` ou `complained`;
-- grava eventos em `mail_events`;
-- adiciona bounce permanente e complaint a `mail_blocklist`;
-- retorna `batchItemFailures` para que somente itens com erro sejam tentados novamente;
-- nao registra payload completo ou dados sensiveis no CloudWatch.
-
-O endpoint de envio recusa destinatarios existentes na blocklist.
-
-Configure no SES o mesmo topico SNS para:
-
-- Delivery;
-- Bounce;
-- Complaint.
-
-Topico:
-
-`mgrefrigeracoes-ses-feedback-prod`
-
-Fila:
-
-`mgrefrigeracoes-ses-feedback-queue-prod`
-
-## 6. Painel de e-mail
-
-O menu **E-mail** do Budget oferece:
+O menu **E-mail** continua oferecendo:
 
 - Caixa de entrada
 - Enviados
@@ -188,49 +196,13 @@ O menu **E-mail** do Budget oferece:
 - envio de orcamento em PDF
 - status de entrega/falha
 
-Mensagens recebidas sao exibidas como texto simples no painel. HTML recebido nao e injetado no DOM, evitando XSS originado em e-mail.
+A troca de provedor e server-side e nao altera o fluxo da interface.
 
-O envio exige sessao autenticada e validacao server-side do administrador.
+## 9. Atualizador Tauri
 
-## 7. Sandbox do SES
+O updater do Tauri exige assinatura criptografica e nao permite desativar essa verificacao.
 
-Enquanto a conta estiver no sandbox:
-
-- recebimento funciona normalmente;
-- o painel pode ser implantado;
-- envio so funciona para destinatarios permitidos pelas regras do sandbox.
-
-Quando a AWS conceder production access na regiao `sa-east-1`, nenhuma mudanca de codigo sera necessaria para enviar a destinatarios comuns.
-
-## 8. Checklist antes de solicitar nova revisao da AWS
-
-Antes de reabrir o caso de Production Access, validar:
-
-1. dominio `mgrefrigeracoes.com.br` verificado;
-2. DKIM bem-sucedido;
-3. entrada real funcionando SES -> S3 -> SQS -> Lambda -> Supabase;
-4. worker de feedback implantado e ligado a fila de feedback;
-5. Delivery, Bounce e Complaint publicados no SNS;
-6. bounce permanente e complaint inseridos na `mail_blocklist`;
-7. envio recusando destinatarios da blocklist;
-8. volume inicial informado como baixo e transacional;
-9. nenhum uso de listas compradas, scraping ou marketing nao solicitado.
-
-## 9. Assinatura do atualizador Tauri
-
-O updater do Tauri exige assinatura criptografica e **nao permite desativar essa verificacao**.
-
-Gere a chave uma unica vez em uma maquina confiavel:
-
-PowerShell:
-
-```powershell
-npm run tauri signer generate -- -w "$HOME\.tauri\mg-orcamentos.key"
-```
-
-Guarde o arquivo privado fora do repositorio e faca backup seguro.
-
-No GitHub, configure os secrets:
+Secrets de build:
 
 - `TAURI_SIGNING_PRIVATE_KEY`
 - `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`
@@ -238,38 +210,16 @@ No GitHub, configure os secrets:
 - `VITE_SUPABASE_PUBLISHABLE_KEY`
 - `VITE_ADMIN_EMAIL`
 
-A chave publica fica fixada em `MG-Orçamento/src-tauri/tauri.conf.json` e e usada pelo app para validar as assinaturas.
+A chave publica permanece fixa em `MG-Orçamento/src-tauri/tauri.conf.json`.
 
-## 10. Publicacao de uma atualizacao
-
-Antes de publicar:
-
-1. aumente a versao em:
-   - `package.json`
-   - `MG-Orçamento/src-tauri/tauri.conf.json`
-   - `MG-Orçamento/src-tauri/Cargo.toml`
-2. faca o merge somente apos CI aprovado;
-3. crie/push uma tag com a mesma versao, por exemplo `v1.1.0`.
-
-O workflow `.github/workflows/tauri-release.yml`:
-
-- compila o app Windows/NSIS;
-- cria os artefatos do updater;
-- assina os artefatos;
-- cria a GitHub Release;
-- publica `latest.json`.
-
-O app instalado consulta:
-
-`https://mgrefrigeracoes.com.br/api/updates/latest`
-
-## 11. Regra de seguranca
+## 10. Regra de seguranca
 
 Nunca:
 
 - comite Secret Key do Supabase;
-- coloque `AWS_SECRET_ACCESS_KEY`, Secret Key do Supabase ou token GitHub em `VITE_*`;
-- publique artefato de atualizacao sem assinatura;
-- desabilite a verificacao de assinatura para contornar erro de release.
-
-Se uma release falhar, corrija o pipeline e publique uma versao nova.
+- comite `RESEND_API_KEY` ou `RESEND_WEBHOOK_SECRET`;
+- coloque segredos em `VITE_*`;
+- aceite webhook sem validacao de assinatura;
+- desabilite blocklist para forcar envio;
+- remova RLS para contornar erro;
+- publique artefato Tauri sem assinatura.
