@@ -11,6 +11,8 @@ import {
 } from "../services/mailApi";
 import {
   deleteDraft,
+  deleteMessagePermanently,
+  emptyTrash,
   listMessages,
   listThread,
   markMessageRead,
@@ -49,6 +51,60 @@ function when(value?: string) {
   return new Intl.DateTimeFormat("pt-BR", {
     dateStyle: "short",
     timeStyle: "short",
+  }).format(date);
+}
+
+function messageDate(message: MailMessage) {
+  const value = message.receivedAt || message.sentAt || message.createdAt;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? new Date(0) : date;
+}
+
+function startOfDay(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function groupLabel(message: MailMessage) {
+  const date = messageDate(message);
+  const today = startOfDay(new Date());
+  const diffDays = Math.round(
+    (today.getTime() - startOfDay(date).getTime()) / 86_400_000,
+  );
+
+  if (diffDays === 0) return "Hoje";
+  if (diffDays === 1) return "Ontem";
+  if (date.getFullYear() === today.getFullYear() && date.getMonth() === today.getMonth()) {
+    return "Este mês";
+  }
+  if (date.getFullYear() === today.getFullYear()) {
+    const month = new Intl.DateTimeFormat("pt-BR", { month: "long" }).format(date);
+    return month.charAt(0).toUpperCase() + month.slice(1);
+  }
+
+  const label = new Intl.DateTimeFormat("pt-BR", {
+    month: "long",
+    year: "numeric",
+  }).format(date);
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+function compactWhen(message: MailMessage) {
+  const date = messageDate(message);
+  const today = startOfDay(new Date());
+  const diffDays = Math.round(
+    (today.getTime() - startOfDay(date).getTime()) / 86_400_000,
+  );
+
+  if (diffDays === 0 || diffDays === 1) {
+    return new Intl.DateTimeFormat("pt-BR", {
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(date);
+  }
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
   }).format(date);
 }
 
@@ -120,6 +176,17 @@ export function MailCenter({
     () => messages.filter((message) => message.folder === "inbox" && !message.readAt).length,
     [messages],
   );
+
+  const groupedMessages = useMemo(() => {
+    const groups: Array<{ label: string; messages: MailMessage[] }> = [];
+    for (const message of messages) {
+      const label = groupLabel(message);
+      const current = groups.at(-1);
+      if (current?.label === label) current.messages.push(message);
+      else groups.push({ label, messages: [message] });
+    }
+    return groups;
+  }, [messages]);
 
   const openMessage = async (message: MailMessage) => {
     if (message.folder === "draft") {
@@ -329,6 +396,37 @@ export function MailCenter({
     }
   };
 
+  const permanentlyDelete = async (message: MailMessage) => {
+    if (!window.confirm("Excluir este e-mail permanentemente? Esta ação não pode ser desfeita.")) {
+      return;
+    }
+    try {
+      await deleteMessagePermanently(message.id);
+      setSelected(null);
+      setThread([]);
+      await load();
+      notify("E-mail excluído permanentemente.");
+    } catch (error) {
+      notify("Erro ao excluir: " + (error as Error).message);
+    }
+  };
+
+  const clearTrash = async () => {
+    if (messages.length === 0) return;
+    if (!window.confirm("Limpar toda a lixeira? Todos os e-mails serão excluídos permanentemente.")) {
+      return;
+    }
+    try {
+      await emptyTrash();
+      setSelected(null);
+      setThread([]);
+      await load();
+      notify("Lixeira limpa.");
+    } catch (error) {
+      notify("Erro ao limpar a lixeira: " + (error as Error).message);
+    }
+  };
+
   return (
     <section className="mail-center">
       <aside className="mail-folders">
@@ -365,36 +463,56 @@ export function MailCenter({
           <button className="button" onClick={() => void load()} disabled={loading}>
             {loading ? "Atualizando..." : "↻ Atualizar"}
           </button>
+          {folder === "trash" && (
+            <button
+              className="button danger mail-clear-trash"
+              onClick={() => void clearTrash()}
+              disabled={loading || messages.length === 0}
+              title="Limpar lixeira"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-2 6h10l-1 11H8L7 9Zm3 2v7h2v-7h-2Zm4 0v7h2v-7h-2Z" />
+              </svg>
+              Limpar
+            </button>
+          )}
         </div>
 
         <div className="mail-list">
           {!loading && messages.length === 0 && (
             <div className="mail-empty">Nenhum e-mail nesta pasta.</div>
           )}
-          {messages.map((message) => (
-            <button
-              key={message.id}
-              className={
-                "mail-list-item " +
-                (!message.readAt && message.folder === "inbox" ? "unread " : "") +
-                (selected?.id === message.id ? "selected" : "")
-              }
-              onClick={() => void openMessage(message)}
-            >
-              <div>
-                <strong>
-                  {message.direction === "outbound"
-                    ? message.toAddresses.join(", ") || "Sem destinatário"
-                    : message.fromName || message.fromAddress}
-                </strong>
-                <time>{when(message.receivedAt || message.sentAt || message.createdAt)}</time>
-              </div>
-              <b>{message.subject}</b>
-              <p>{message.snippet || message.textBody.slice(0, 180) || "Sem conteúdo"}</p>
-              <small className={"mail-status " + message.status}>
-                {statusLabel(message.status)}
-              </small>
-            </button>
+          {groupedMessages.map((group) => (
+            <section className="mail-date-group" key={group.label}>
+              <div className="mail-date-group-title">{group.label}</div>
+              {group.messages.map((message) => (
+                <button
+                  key={message.id}
+                  className={
+                    "mail-list-item " +
+                    (!message.readAt && message.folder === "inbox" ? "unread " : "") +
+                    (selected?.id === message.id ? "selected" : "")
+                  }
+                  onClick={() => void openMessage(message)}
+                >
+                  <div>
+                    <strong>
+                      {message.direction === "outbound"
+                        ? message.toAddresses.join(", ") || "Sem destinatário"
+                        : message.fromName || message.fromAddress}
+                    </strong>
+                    <time title={when(message.receivedAt || message.sentAt || message.createdAt)}>
+                      {compactWhen(message)}
+                    </time>
+                  </div>
+                  <b>{message.subject}</b>
+                  <p>{message.snippet || message.textBody.slice(0, 180) || "Sem conteúdo"}</p>
+                  <small className={"mail-status " + message.status}>
+                    {statusLabel(message.status)}
+                  </small>
+                </button>
+              ))}
+            </section>
           ))}
         </div>
       </div>
@@ -444,9 +562,20 @@ export function MailCenter({
                     Arquivar
                   </button>
                 )}
-                {selected.folder !== "trash" && (
+                {selected.folder !== "trash" ? (
                   <button className="button danger" onClick={() => void move(selected, "trash")}>
                     Lixeira
+                  </button>
+                ) : (
+                  <button
+                    className="button danger mail-delete-forever"
+                    onClick={() => void permanentlyDelete(selected)}
+                    title="Excluir permanentemente"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-2 6h10l-1 11H8L7 9Zm3 2v7h2v-7h-2Zm4 0v7h2v-7h-2Z" />
+                    </svg>
+                    Excluir
                   </button>
                 )}
               </div>
