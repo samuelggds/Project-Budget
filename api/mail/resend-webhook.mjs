@@ -115,7 +115,7 @@ export default async function handler(req, res) {
       );
     }
 
-    const eventRows = (recipients.length ? recipients : [null]).map((recipient) => ({
+    const eventRows = (recipients.length ? recipients : [""]).map((recipient) => ({
       provider_event_id: id,
       provider_message_id: providerMessageId,
       event_type: type,
