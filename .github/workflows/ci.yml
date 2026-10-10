@@ -26,8 +26,11 @@ jobs:
         run: |
           node --check api/_lib/security.mjs
           node --check api/mail/send.mjs
+          node --check api/mail/resend-webhook.mjs
           node --check api/mail/attachment.mjs
           node --check api/updates/latest.mjs
           node --check api/updates/download.mjs
           node --check aws/lambda/inbox-worker/index.mjs
           node --check aws/lambda/feedback-worker/index.mjs
+      - name: Test mail webhook security
+        run: node --test tests/resend-webhook-signature.test.mjs
