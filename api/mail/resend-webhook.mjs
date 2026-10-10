@@ -104,17 +104,6 @@ export default async function handler(req, res) {
     const status = eventStatus(type);
     const recipients = normalizeEmails(data.to);
 
-    if (status) {
-      await supabaseSecretRest(
-        "mail_messages?provider_message_id=eq." + encodeURIComponent(providerMessageId),
-        {
-          method: "PATCH",
-          prefer: "return=minimal",
-          body: { status, updated_at: new Date().toISOString() },
-        },
-      );
-    }
-
     const eventRows = (recipients.length ? recipients : [""]).map((recipient) => ({
       provider_event_id: id,
       provider_message_id: providerMessageId,
@@ -128,6 +117,17 @@ export default async function handler(req, res) {
       prefer: "resolution=ignore-duplicates,return=minimal",
       body: eventRows,
     });
+
+    if (status) {
+      await supabaseSecretRest(
+        "mail_messages?provider_message_id=eq." + encodeURIComponent(providerMessageId),
+        {
+          method: "PATCH",
+          prefer: "return=minimal",
+          body: { status, updated_at: new Date().toISOString() },
+        },
+      );
+    }
 
     if (shouldBlock(type, data) && recipients.length) {
       await supabaseSecretRest("mail_blocklist?on_conflict=email", {
