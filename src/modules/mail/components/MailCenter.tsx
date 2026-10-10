@@ -11,6 +11,8 @@ import {
 } from "../services/mailApi";
 import {
   deleteDraft,
+  deleteMessagePermanently,
+  emptyTrash,
   listMessages,
   listThread,
   markMessageRead,
@@ -394,6 +396,37 @@ export function MailCenter({
     }
   };
 
+  const permanentlyDelete = async (message: MailMessage) => {
+    if (!window.confirm("Excluir este e-mail permanentemente? Esta ação não pode ser desfeita.")) {
+      return;
+    }
+    try {
+      await deleteMessagePermanently(message.id);
+      setSelected(null);
+      setThread([]);
+      await load();
+      notify("E-mail excluído permanentemente.");
+    } catch (error) {
+      notify("Erro ao excluir: " + (error as Error).message);
+    }
+  };
+
+  const clearTrash = async () => {
+    if (messages.length === 0) return;
+    if (!window.confirm("Limpar toda a lixeira? Todos os e-mails serão excluídos permanentemente.")) {
+      return;
+    }
+    try {
+      await emptyTrash();
+      setSelected(null);
+      setThread([]);
+      await load();
+      notify("Lixeira limpa.");
+    } catch (error) {
+      notify("Erro ao limpar a lixeira: " + (error as Error).message);
+    }
+  };
+
   return (
     <section className="mail-center">
       <aside className="mail-folders">
@@ -430,6 +463,19 @@ export function MailCenter({
           <button className="button" onClick={() => void load()} disabled={loading}>
             {loading ? "Atualizando..." : "↻ Atualizar"}
           </button>
+          {folder === "trash" && (
+            <button
+              className="button danger mail-clear-trash"
+              onClick={() => void clearTrash()}
+              disabled={loading || messages.length === 0}
+              title="Limpar lixeira"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-2 6h10l-1 11H8L7 9Zm3 2v7h2v-7h-2Zm4 0v7h2v-7h-2Z" />
+              </svg>
+              Limpar
+            </button>
+          )}
         </div>
 
         <div className="mail-list">
@@ -516,9 +562,20 @@ export function MailCenter({
                     Arquivar
                   </button>
                 )}
-                {selected.folder !== "trash" && (
+                {selected.folder !== "trash" ? (
                   <button className="button danger" onClick={() => void move(selected, "trash")}>
                     Lixeira
+                  </button>
+                ) : (
+                  <button
+                    className="button danger mail-delete-forever"
+                    onClick={() => void permanentlyDelete(selected)}
+                    title="Excluir permanentemente"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-2 6h10l-1 11H8L7 9Zm3 2v7h2v-7h-2Zm4 0v7h2v-7h-2Z" />
+                    </svg>
+                    Excluir
                   </button>
                 )}
               </div>
