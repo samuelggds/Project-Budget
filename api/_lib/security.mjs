@@ -77,7 +77,7 @@ export async function requireAdmin(req, res) {
   }
 
   const user = await response.json();
-  const allowed = String(process.env.ADMIN_EMAIL || process.env.VITE_ADMIN_EMAIL || "")
+  const allowed = String(process.env.ADMIN_EMAIL || "")
     .trim()
     .toLowerCase();
   const email = String(user.email || "").trim().toLowerCase();
