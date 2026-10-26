@@ -19,3 +19,17 @@
 - Nenhuma alteracao foi feita nas regras de orcamentos e pagamentos.
 
 **Observacao:** o bloqueio RLS e obrigatorio: esconder so o painel com React nao substitui autorizacao no Supabase. Esta atualizacao deve ser testada com plano de rollback, pois uma migration mal configurada pode bloquear acesso aos dados.
+
+
+## Diagnostico da mensagem "Verificacao de seguranca indisponivel"
+
+A API retorna o campo seguro `code` sem revelar credenciais. Verifique a aba Network da chamada POST `/api/auth/admin-mfa` e os logs da Vercel:
+
+- `MFA_BASE_CONFIG`: faltam SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, SUPABASE_SECRET_KEY (formato sb_secret_...) ou ADMIN_EMAIL no projeto Vercel.
+- `MFA_PEPPER_CONFIG`: defina ADMIN_MFA_PEPPER de 32+ caracteres em Vercel para solicitar/validar codigos.
+- `MFA_MAIL_CONFIG`: RESEND_API_KEY ou MAIL_FROM_EMAIL incorretos; verifique dominio Resend.
+- `MFA_DB_MIGRATION_REQUIRED`: confira a execucao de `supabase/admin-email-mfa-migration.sql` no projeto Supabase correto e a exposicao das funcoes ao PostgREST.
+- `MFA_DB_QUERY_FAILED`: consulte nos logs da Vercel `ADMIN_MFA_RPC_REJECTED`, status HTTP e codigo do PostgREST. Não logar tokens/segredos.
+- `MFA_DB_CONNECTION`: Supabase indisponivel ou URL incorreta.
+
+**Importante:** Chaves novas `sb_secret_...` sao passadas apenas em `apikey`, nunca como `Authorization: Bearer`. Aplicar o PR nao substitui a configuracao dos segredos no ambiente de producao. Nao desativar o MFA ou regras RLS para liberar acesso.
