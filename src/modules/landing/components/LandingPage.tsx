@@ -197,7 +197,7 @@ export function LandingPage() {
                 />
               </div>
               <div className="mg-hero-visual-badge"><span className="mg-badge-icon"><Icon name="snow" size={28} /></span><span><strong>Refrigeração em movimento</strong><small>O cuidado que acompanha sua carga.</small></span></div>
-              <span className="mg-photo-note">Foto ilustrativa de caminhão frigorífico brasileiro · Wikimedia Commons</span>
+              <span className="mg-photo-note">Foto: Sérgio Vale / Secom · CC BY 2.0 · Wikimedia Commons</span>
             </div>
           </div>
           <div className="mg-hero-bottom-line" />
