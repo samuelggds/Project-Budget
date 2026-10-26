@@ -2,14 +2,15 @@ import { useEffect, useState } from 'react'
 import './landing.css'
 
 const whatsappNumber = '5585989323113'
+const additionalWhatsappNumber = '5585992939797'
 
-function whatsappLink(message: string) {
-  return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`
+function whatsappLink(message: string, phoneNumber: string = whatsappNumber) {
+  return `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`
 }
 
-const contactLink = whatsappLink(
-  'Olá! Conheci a MG Refrigerações pelo site e gostaria de solicitar um orçamento para refrigeração de baú de caminhão.',
-)
+const contactMessage = 'Olá! Conheci a MG Refrigerações pelo site e gostaria de solicitar um orçamento para refrigeração de baú de caminhão.'
+const contactLink = whatsappLink(contactMessage)
+const additionalContactLink = whatsappLink(contactMessage, additionalWhatsappNumber)
 
 type IconName = 'snow' | 'wrench' | 'shield' | 'truck' | 'arrow' | 'phone' | 'menu' | 'close' | 'check' | 'location' | 'mail'
 
@@ -182,6 +183,7 @@ export function LandingPage() {
                 <a className="mg-btn mg-btn-whatsapp" href={contactLink} target="_blank" rel="noopener noreferrer"><Icon name="phone" size={20} /> Solicitar orçamento <Icon name="arrow" size={18} /></a>
                 <a className="mg-btn mg-btn-outline" href="#servicos">Conhecer serviços <Icon name="arrow" size={18} /></a>
               </div>
+              <p className="mg-hero-contact-alt">Outro WhatsApp: <a href={additionalContactLink} target="_blank" rel="noopener noreferrer">(85) 99293-9797</a></p>
               <div className="mg-hero-proof">
                 <span><Icon name="check" size={17} /> Atendimento empresarial</span>
                 <span><Icon name="check" size={17} /> Foco em baús refrigerados</span>
@@ -241,12 +243,14 @@ export function LandingPage() {
           <div className="mg-container mg-operation-grid">
             <div className="mg-operation-photo mg-reveal">
               <img
-                src="https://images.unsplash.com/photo-1681514583222-0579e6835666?auto=format&fit=crop&w=1200&q=80"
-                alt="Caminhão refrigerado em área de operações logísticas, imagem ilustrativa"
+                src="/mg-operacao-refrigerada.webp"
+                alt="Veículos de transporte refrigerado com a marca MG Refrigeração em centro de distribuição, imagem ilustrativa"
                 loading="lazy"
                 decoding="async"
+                width={1449}
+                height={1086}
               />
-              <span>Imagem ilustrativa · MealPro / Unsplash</span>
+              <span>Imagem ilustrativa criada digitalmente · MG Refrigerações</span>
             </div>
             <div className="mg-operation-content mg-reveal">
               <span className="mg-eyebrow">POR QUE FALAR COM A MG?</span>
@@ -281,6 +285,20 @@ export function LandingPage() {
           </div>
         </section>
 
+        <section className="mg-client-section" aria-labelledby="mg-clients-title">
+          <div className="mg-container mg-client-layout mg-reveal">
+            <div className="mg-client-intro">
+              <span className="mg-eyebrow">EXPERIÊNCIA COM EMPRESAS</span>
+              <h2 id="mg-clients-title">Empresas que já contam com os serviços da MG</h2>
+              <p>A MG Refrigerações presta serviços a empresas que dependem de soluções em refrigeração no transporte. Conheça algumas das empresas atendidas.</p>
+            </div>
+            <div className="mg-client-logos" aria-label="Empresas atendidas pela MG Refrigerações">
+              <div className="mg-client-brand"><strong>CIALNE</strong><span>Empresa atendida</span></div>
+              <div className="mg-client-brand"><strong>Leite Maranguape</strong><span>Empresa atendida</span></div>
+            </div>
+          </div>
+        </section>
+
         <section className="mg-section mg-steps" aria-labelledby="mg-steps-title">
           <div className="mg-container">
             <div className="mg-steps-heading mg-reveal"><span className="mg-eyebrow">CONTATO SIMPLES E DIRETO</span><h2 id="mg-steps-title">Como solicitar um atendimento</h2></div>
@@ -301,7 +319,11 @@ export function LandingPage() {
                 <h2 id="mg-contact-title">Sua frota merece atenção especializada.</h2>
                 <p>Entre em contato com a MG Refrigerações e solicite informações sobre o serviço ideal para o seu caminhão.</p>
               </div>
-              <div className="mg-cta-action"><a href={contactLink} target="_blank" rel="noopener noreferrer" className="mg-btn mg-btn-whatsapp"><Icon name="phone" size={21} /> Chamar no WhatsApp <Icon name="arrow" size={18} /></a><small>(85) 98932-3113</small></div>
+              <div className="mg-cta-action">
+                <a href={contactLink} target="_blank" rel="noopener noreferrer" className="mg-btn mg-btn-whatsapp"><Icon name="phone" size={20} /> (85) 98932-3113 <Icon name="arrow" size={18} /></a>
+                <a href={additionalContactLink} target="_blank" rel="noopener noreferrer" className="mg-btn mg-btn-additional-whatsapp"><Icon name="phone" size={20} /> (85) 99293-9797 <Icon name="arrow" size={18} /></a>
+                <small>Escolha um dos nossos contatos no WhatsApp</small>
+              </div>
             </div>
           </div>
         </section>
@@ -323,6 +345,7 @@ export function LandingPage() {
           <div className="mg-footer-col">
             <h3>Contato</h3>
             <a href={contactLink} target="_blank" rel="noopener noreferrer"><Icon name="phone" size={17} /> (85) 98932-3113</a>
+            <a href={additionalContactLink} target="_blank" rel="noopener noreferrer"><Icon name="phone" size={17} /> (85) 99293-9797</a>
             <a href="mailto:contato@mgrefrigeracoes.com.br"><Icon name="mail" size={17} /> contato@mgrefrigeracoes.com.br</a>
             <span><Icon name="location" size={17} /> Fortaleza, Ceará</span>
           </div>

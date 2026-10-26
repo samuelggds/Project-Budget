@@ -28,3 +28,28 @@
 .mg-landing .mg-reveal.mg-reveal-visible{opacity:1;transform:translateY(0)}
 @media(max-width:600px){.mg-landing .mg-brand-mark{width:56px;height:56px;flex-basis:56px}.mg-landing .mg-brand-name strong{font-size:15px}}
 @media(prefers-reduced-motion:reduce){.mg-landing .mg-hero-entrance{animation:none!important}.mg-landing .mg-reveal{opacity:1!important;transform:none!important;transition:none!important}.mg-landing .mg-hero-photo img,.mg-landing .mg-operation-photo img,.mg-landing .mg-market,.mg-landing .mg-nav>a,.mg-landing .mg-text-link,.mg-landing .mg-service-card>a{transition:none!important}}
+
+
+/* Dois contatos comerciais no WhatsApp, preservando o numero ja utilizado. */
+.mg-landing .mg-hero-contact-alt{margin:15px 0 0;font-size:12px;color:#bfd2e7}
+.mg-landing .mg-hero-contact-alt a{font-weight:800;color:#8cd4ff;text-decoration:underline;text-underline-offset:3px}
+.mg-landing .mg-hero-contact-alt a:hover{color:#fff}
+.mg-landing .mg-cta-action{width:270px;max-width:100%;gap:11px}
+.mg-landing .mg-cta-action .mg-btn{width:100%;justify-content:space-between;white-space:nowrap;padding:14px 15px}
+.mg-landing .mg-btn-additional-whatsapp{color:#0c3158;background:#fff;border:1px solid #e3ecf8;box-shadow:0 10px 24px rgba(0,0,0,.08)}
+.mg-landing .mg-btn-additional-whatsapp:hover{color:#0d3865;background:#eaf5ff}
+.mg-landing .mg-cta-action small{text-align:center;line-height:1.5;font-size:11px}
+
+/* Prova social: nomes em tipografia neutra, sem usar logotipos de terceiros. */
+.mg-landing .mg-client-section{background:#fff;padding:72px 0 82px;border-top:1px solid #e5ebf3}
+.mg-landing .mg-client-layout{display:grid;grid-template-columns:1fr 1.15fr;gap:50px;align-items:center}
+.mg-landing .mg-client-intro h2{color:#0b2549;font-size:clamp(27px,2.9vw,39px);line-height:1.18;letter-spacing:-1.4px;margin:13px 0 14px}
+.mg-landing .mg-client-intro p{color:#65748c;font-size:14px;line-height:1.8;margin:0;max-width:470px}
+.mg-landing .mg-client-logos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.mg-landing .mg-client-brand{min-height:155px;min-width:0;background:#f5f8fc;border:1px solid #e4eaf3;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:13px;padding:19px;transition:transform .25s,box-shadow .25s}
+.mg-landing .mg-client-brand strong{color:#123a70;font-size:clamp(18px,2vw,25px);font-weight:850;letter-spacing:-.65px;line-height:1.2}
+.mg-landing .mg-client-brand span{color:#7e8ea5;font-size:11px;font-weight:650}
+.mg-landing .mg-client-brand:hover{transform:translateY(-3px);box-shadow:0 14px 26px rgba(12,41,78,.06)}
+@media(max-width:850px){.mg-landing .mg-client-layout{grid-template-columns:1fr;gap:24px}.mg-landing .mg-cta-action{width:100%;max-width:340px}}
+@media(max-width:600px){.mg-landing .mg-client-section{padding:64px 0}.mg-landing .mg-client-logos{gap:10px}.mg-landing .mg-client-brand{padding:12px;min-height:120px}.mg-landing .mg-client-brand strong{font-size:17px}}
+@media(prefers-reduced-motion:reduce){.mg-landing .mg-client-brand,.mg-landing .mg-btn-additional-whatsapp{transition:none!important}}
