@@ -293,7 +293,7 @@ export function LandingPage() {
               <p>A MG Refrigerações presta serviços a empresas que dependem de soluções em refrigeração no transporte. Conheça algumas das empresas atendidas.</p>
             </div>
             <div className="mg-client-logos" aria-label="Empresas atendidas pela MG Refrigerações">
-              <div className="mg-client-brand">
+              <a className="mg-client-brand" href="https://www.cialne.com.br/" target="_blank" rel="noopener noreferrer" aria-label="Visitar site oficial da CIALNE">
                 <div className="mg-client-brand-image">
                   <img
                     src="https://d273ql64kms4t6.cloudfront.net/local-experts/local-experts_1122021-55545-pm_unnamed.png"
@@ -307,8 +307,8 @@ export function LandingPage() {
                 </div>
                 <strong>CIALNE</strong>
                 <span>Empresa atendida</span>
-              </div>
-              <div className="mg-client-brand">
+              </a>
+              <a className="mg-client-brand" href="https://maranguapelaticinios.com.br/" target="_blank" rel="noopener noreferrer" aria-label="Visitar site oficial da Maranguape Laticínios">
                 <div className="mg-client-brand-image">
                   <img
                     src="https://maranguapelaticinios.com.br/wp-content/uploads/2025/03/logo_maranguape__vermelha-1.png.webp"
@@ -322,7 +322,7 @@ export function LandingPage() {
                 </div>
                 <strong>Leite Maranguape</strong>
                 <span>Empresa atendida</span>
-              </div>
+              </a>
             </div>
           </div>
         </section>
