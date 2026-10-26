@@ -11,6 +11,3 @@ export const supabase = createClient(
   { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } },
 );
 
-export const authorizedEmail = (import.meta.env.VITE_ADMIN_EMAIL || "")
-  .trim()
-  .toLowerCase();
