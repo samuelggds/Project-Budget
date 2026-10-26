@@ -1,3 +1,4 @@
+import { callAdminMfaRpc } from "./admin-mfa-rpc.mjs";
 const DEFAULT_ALLOWED_ORIGINS = new Set([
   "https://mgrefrigeracoes.com.br",
   "https://www.mgrefrigeracoes.com.br",
@@ -110,23 +111,16 @@ export async function requireAdmin(req, res) {
     sendJson(res, 503, { error: "MFA administrativo nao configurado." });
     return null;
   }
-  let mfaResponse;
+  let mfaStatus;
   try {
-    mfaResponse = await fetch(url + "/rest/v1/rpc/admin_email_mfa_status", {
-      method: "POST",
-      headers: { apikey: secret, Authorization: "Bearer " + secret, "Content-Type": "application/json" },
-      body: JSON.stringify({ p_user_id: user.id, p_session_id: sessionId }),
-      cache: "no-store"
+    mfaStatus = await callAdminMfaRpc({ url, secretKey: secret }, "admin_email_mfa_status", {
+      p_user_id: user.id, p_session_id: sessionId
     });
-  } catch {
-    sendJson(res, 503, { error: "Nao foi possivel validar o segundo fator." });
+  } catch (error) {
+    console.error("ADMIN_MFA_STATUS_FAILED", { code: error?.code || "MFA_UNEXPECTED" });
+    sendJson(res, 503, { error: "MFA administrativo indisponível.", code: error?.code || "MFA_UNAVAILABLE" });
     return null;
   }
-  if (!mfaResponse.ok) {
-    sendJson(res, 503, { error: "MFA administrativo indisponivel." });
-    return null;
-  }
-  const mfaStatus = await mfaResponse.json().catch(() => ({}));
   if (mfaStatus.verified !== true) {
     sendJson(res, 403, { error: "Validacao adicional por email obrigatoria." });
     return null;
