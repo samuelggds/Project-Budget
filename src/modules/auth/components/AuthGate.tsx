@@ -7,7 +7,8 @@ import "./mfa.css";
 async function mfaRequest(action: "status" | "request" | "verify", code?: string) {
   const { data } = await supabase.auth.getSession();
   if (!data.session?.access_token) throw new Error("Sua sessão expirou. Entre novamente.");
-  const response = await fetch("/api/auth/admin-mfa", {
+  const apiBase = "__TAURI_INTERNALS__" in window ? String(import.meta.env.VITE_API_URL || "").replace(/\/$/, "") : "";
+  const response = await fetch(apiBase + "/api/auth/admin-mfa", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: "Bearer " + data.session.access_token },
     body: JSON.stringify({ action, ...(code ? { code } : {}) }),
