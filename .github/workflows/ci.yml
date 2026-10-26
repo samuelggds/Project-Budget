@@ -26,6 +26,7 @@ jobs:
         run: |
           node --check api/_lib/security.mjs
           node --check api/auth/admin-mfa.mjs
+          node --check api/_lib/admin-mfa-rpc.mjs
           node --check api/mail/send.mjs
           node --check api/mail/resend-webhook.mjs
           node --check api/mail/attachment.mjs
@@ -33,5 +34,7 @@ jobs:
           node --check api/updates/download.mjs
           node --check aws/lambda/inbox-worker/index.mjs
           node --check aws/lambda/feedback-worker/index.mjs
+      - name: Test admin MFA RPC security
+        run: node --test tests/admin-mfa-rpc.test.mjs
       - name: Test mail webhook security
         run: node --test tests/resend-webhook-signature.test.mjs

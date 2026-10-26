@@ -1,10 +1,11 @@
 import crypto from "node:crypto";
 import { applyCors, sendJson } from "../_lib/security.mjs";
+import { callAdminMfaRpc, AdminMfaRpcError } from "../_lib/admin-mfa-rpc.mjs";
 
 const recipient = "matheuslegend10@hotmail.com";
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-function config() {
+function config(action) {
   const url = String(process.env.SUPABASE_URL || "").replace(/\/$/, "");
   const publicKey = process.env.SUPABASE_PUBLISHABLE_KEY;
   const secretKey = process.env.SUPABASE_SECRET_KEY;
@@ -12,23 +13,17 @@ function config() {
   const resend = process.env.RESEND_API_KEY;
   const from = process.env.MAIL_FROM_EMAIL || "contato@mgrefrigeracoes.com.br";
   const allowedEmail = String(process.env.ADMIN_EMAIL || "").trim().toLowerCase();
-  if (!url || !publicKey || !secretKey || !pepper || pepper.length < 32 || !resend || !emailPattern.test(from) || !allowedEmail) {
-    throw new Error("MFA_CONFIG_MISSING");
+  const missing = [];
+  if (!url?.startsWith("https://") || !publicKey || !secretKey?.startsWith("sb_secret_") || !allowedEmail) missing.push("MFA_BASE_CONFIG");
+  if (action === "request" || action === "verify") {
+    if (!pepper || pepper.length < 32) missing.push("MFA_PEPPER_CONFIG");
   }
+  if (action === "request" && (!resend || !emailPattern.test(from))) missing.push("MFA_MAIL_CONFIG");
+  if (missing.length) { const error = new Error("MFA_CONFIG_MISSING"); error.code = missing[0]; throw error; }
   return { url, publicKey, secretKey, pepper, resend, from, allowedEmail };
 }
 
 function asJson(response) { return response.json().catch(() => ({})); }
-async function checkedRpc(cfg, name, body) {
-  const response = await fetch(cfg.url + "/rest/v1/rpc/" + name, {
-    method: "POST",
-    headers: { apikey: cfg.secretKey, Authorization: "Bearer " + cfg.secretKey, "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-    cache: "no-store"
-  });
-  if (!response.ok) throw new Error("MFA_DATABASE_ERROR");
-  return asJson(response);
-}
 async function authorizedSession(req, cfg) {
   const header = String(req.headers.authorization || "");
   const token = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
@@ -60,20 +55,21 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") { res.statusCode = 204; return res.end(); }
   if (req.method !== "POST") return sendJson(res, 405, { error: "Método não permitido." });
   try {
-    const cfg = config();
-    const session = await authorizedSession(req, cfg);
-    if (!session) return sendJson(res, 401, { error: "Sessão administrativa inválida." });
     const body = typeof req.body === "string" ? JSON.parse(req.body) : (req.body || {});
     const action = String(body.action || "");
+    if (!["status", "request", "verify"].includes(action)) return sendJson(res, 400, { error: "Operação inválida." });
+    const cfg = config(action);
+    const session = await authorizedSession(req, cfg);
+    if (!session) return sendJson(res, 401, { error: "Sessão administrativa inválida." });
     if (action === "status") {
-      const result = await checkedRpc(cfg, "admin_email_mfa_status", {
+      const result = await callAdminMfaRpc(cfg, "admin_email_mfa_status", {
         p_user_id: session.userId, p_session_id: session.sessionId
       });
       return sendJson(res, 200, { verified: result.verified === true, expiresAt: result.expiresAt || null });
     }
     if (action === "request") {
       const code = String(crypto.randomInt(0, 1_000_000)).padStart(6, "0");
-      const result = await checkedRpc(cfg, "admin_email_mfa_request", {
+      const result = await callAdminMfaRpc(cfg, "admin_email_mfa_request", {
         p_user_id: session.userId, p_session_id: session.sessionId,
         p_code_hash: hashCode(cfg, session.sessionId, code)
       });
@@ -100,7 +96,7 @@ export default async function handler(req, res) {
     if (action === "verify") {
       const code = String(body.code || "");
       if (!/^\d{6}$/.test(code)) return sendJson(res, 400, { error: "Informe os seis dígitos do código." });
-      const result = await checkedRpc(cfg, "admin_email_mfa_verify", {
+      const result = await callAdminMfaRpc(cfg, "admin_email_mfa_verify", {
         p_user_id: session.userId, p_session_id: session.sessionId,
         p_code_hash: hashCode(cfg, session.sessionId, code)
       });
@@ -109,7 +105,12 @@ export default async function handler(req, res) {
     }
     return sendJson(res, 400, { error: "Operação inválida." });
   } catch (error) {
-    console.error("MFA_HANDLER_ERROR", error instanceof Error ? error.message : "unknown");
-    return sendJson(res, 503, { error: "Verificação de segurança indisponível." });
+    const code = error instanceof AdminMfaRpcError ? error.code : error?.code || "MFA_UNEXPECTED";
+    console.error("MFA_HANDLER_ERROR", { code });
+    const configurationProblem = String(code).endsWith("_CONFIG") || code === "MFA_CONFIG_MISSING";
+    return sendJson(res, 503, {
+      error: configurationProblem ? "MFA não configurado no servidor. Contate o administrador." : "Verificação de segurança indisponível.",
+      code: String(code)
+    });
   }
 }
