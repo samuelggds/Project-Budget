@@ -3,3 +3,28 @@
 @media(max-width:850px){.mg-header-inner{min-height:78px}.mg-mobile-toggle{display:block}.mg-nav{display:none;position:absolute;top:100%;left:0;right:0;flex-direction:column;align-items:stretch;gap:0;background:white;padding:12px 24px 25px;border-bottom:1px solid #e4edf6;box-shadow:0 12px 24px #0001}.mg-nav-open{display:flex}.mg-nav>a{padding:13px 8px}.mg-nav .mg-nav-cta{margin-top:10px;justify-content:center}.mg-hero-grid{grid-template-columns:1fr;padding-top:65px;padding-bottom:83px;gap:38px}.mg-hero-content{max-width:700px}.mg-hero h1{font-size:clamp(38px,6vw,58px)}.mg-hero-photo{height:370px}.mg-hero-visual-badge{left:20px}.mg-services-grid{grid-template-columns:repeat(2,1fr)}.mg-section-heading{align-items:flex-start;flex-direction:column;gap:10px}.mg-operation-grid{grid-template-columns:1fr;gap:35px}.mg-operation-photo{height:350px}.mg-cta-panel{padding:45px;flex-direction:column;align-items:flex-start}.mg-footer-grid{gap:25px;grid-template-columns:1.2fr 1fr}.mg-footer-company{grid-column:1 / -1}}
 @media(max-width:600px){.mg-container{padding:0 19px}.mg-brand-mark{width:47px;height:47px}.mg-brand-name strong{font-size:15px}.mg-brand-name small{font-size:9px}.mg-hero-grid{padding-top:54px;padding-bottom:73px}.mg-hero h1{font-size:40px;letter-spacing:-1.8px}.mg-hero-description{font-size:14px}.mg-hero-actions{flex-direction:column}.mg-btn{width:100%;justify-content:center}.mg-hero-proof{gap:12px;flex-direction:column;margin-top:25px}.mg-hero-photo{height:240px}.mg-hero-visual-badge{left:8px;bottom:-25px;padding:12px}.mg-badge-icon{width:42px;height:42px}.mg-photo-note{bottom:-45px;font-size:9px}.mg-intro-inner{min-height:98px;flex-direction:column;justify-content:center;align-items:flex-start;gap:6px}.mg-intro-inner>span{font-size:9px}.mg-section{padding:74px 0}.mg-services-grid,.mg-markets-grid,.mg-steps-grid{grid-template-columns:1fr}.mg-service-card{min-height:0}.mg-section-heading h2,.mg-operation h2,.mg-markets h2,.mg-steps h2,.mg-cta-section h2{font-size:34px}.mg-section-heading>p{font-size:13px}.mg-operation-photo{height:270px}.mg-steps-grid{gap:23px}.mg-cta-panel{padding:34px 25px}.mg-footer-grid{grid-template-columns:1fr;gap:35px}.mg-footer-company{grid-column:auto}.mg-footer-bottom{flex-direction:column;gap:5px}.mg-floating-whatsapp{width:53px;height:53px;right:15px;bottom:15px}}
 @media(prefers-reduced-motion:reduce){.mg-landing *{scroll-behavior:auto!important;transition:none!important}}
+
+
+/* Marca oficial: imagem grande sem fundo desenhado pelo layout, mesmo tamanho nos dois lugares. */
+.mg-landing .mg-brand-mark{width:68px;height:68px;flex:0 0 68px;padding:0;border:0;border-radius:0;box-shadow:none;background:transparent;overflow:visible}
+.mg-landing .mg-brand-mark img{display:block;width:100%;height:100%;object-fit:contain;image-rendering:auto}
+.mg-landing .mg-brand-name{justify-content:center}
+.mg-landing .mg-brand-name strong{font-size:17px;line-height:1.23}
+.mg-landing .mg-header .mg-brand,.mg-landing .mg-footer .mg-brand{gap:12px}
+.mg-landing .mg-footer .mg-brand-mark{background:transparent}
+.mg-landing .mg-footer .mg-brand-name strong{color:#fff}
+.mg-landing .mg-nav>a:not(.mg-nav-cta),.mg-landing .mg-text-link,.mg-landing .mg-service-card>a{transition:color .2s ease,transform .2s ease}
+.mg-landing .mg-nav>a:not(.mg-nav-cta):hover,.mg-landing .mg-text-link:hover,.mg-landing .mg-service-card>a:hover{transform:translateY(-2px)}
+.mg-landing .mg-hero-photo img,.mg-landing .mg-operation-photo img{transition:transform .6s ease}
+.mg-landing .mg-hero-photo:hover img,.mg-landing .mg-operation-photo:hover img{transform:scale(1.035)}
+.mg-landing .mg-market{transition:transform .28s ease,box-shadow .28s ease}
+.mg-landing .mg-market:hover{transform:translateY(-4px);box-shadow:0 18px 40px rgba(14,39,74,.08)}
+.mg-landing .mg-floating-whatsapp{transition:transform .24s ease,box-shadow .24s ease}
+.mg-landing .mg-floating-whatsapp:hover{box-shadow:0 14px 32px rgba(4,62,35,.27)}
+@keyframes mg-fade-up{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+.mg-landing .mg-hero-entrance{animation:mg-fade-up .75s both cubic-bezier(.2,.7,.25,1)}
+.mg-landing .mg-hero-entrance-delayed{animation-delay:.14s}
+.mg-landing .mg-reveal{opacity:0;transform:translateY(20px);transition:opacity .6s ease,transform .6s cubic-bezier(.2,.7,.25,1)}
+.mg-landing .mg-reveal.mg-reveal-visible{opacity:1;transform:translateY(0)}
+@media(max-width:600px){.mg-landing .mg-brand-mark{width:56px;height:56px;flex-basis:56px}.mg-landing .mg-brand-name strong{font-size:15px}}
+@media(prefers-reduced-motion:reduce){.mg-landing .mg-hero-entrance{animation:none!important}.mg-landing .mg-reveal{opacity:1!important;transform:none!important;transition:none!important}.mg-landing .mg-hero-photo img,.mg-landing .mg-operation-photo img,.mg-landing .mg-market,.mg-landing .mg-nav>a,.mg-landing .mg-text-link,.mg-landing .mg-service-card>a{transition:none!important}}

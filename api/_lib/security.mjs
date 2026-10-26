@@ -91,6 +91,47 @@ export async function requireAdmin(req, res) {
     return null;
   }
 
+  // API backend nao aceita apenas senha: exige MFA desta sessao JWT.
+  const parts = token.split(".");
+  let payload;
+  try {
+    payload = JSON.parse(Buffer.from(parts[1] || "", "base64url").toString("utf8"));
+  } catch {
+    sendJson(res, 401, { error: "Token invalido." });
+    return null;
+  }
+  const sessionId = String(payload.session_id || "");
+  if (payload.sub !== user.id || !/^[0-9a-f-]{36}$/i.test(sessionId)) {
+    sendJson(res, 401, { error: "Sessao de autenticacao invalida." });
+    return null;
+  }
+  const secret = String(process.env.SUPABASE_SECRET_KEY || "");
+  if (!secret) {
+    sendJson(res, 503, { error: "MFA administrativo nao configurado." });
+    return null;
+  }
+  let mfaResponse;
+  try {
+    mfaResponse = await fetch(url + "/rest/v1/rpc/admin_email_mfa_status", {
+      method: "POST",
+      headers: { apikey: secret, Authorization: "Bearer " + secret, "Content-Type": "application/json" },
+      body: JSON.stringify({ p_user_id: user.id, p_session_id: sessionId }),
+      cache: "no-store"
+    });
+  } catch {
+    sendJson(res, 503, { error: "Nao foi possivel validar o segundo fator." });
+    return null;
+  }
+  if (!mfaResponse.ok) {
+    sendJson(res, 503, { error: "MFA administrativo indisponivel." });
+    return null;
+  }
+  const mfaStatus = await mfaResponse.json().catch(() => ({}));
+  if (mfaStatus.verified !== true) {
+    sendJson(res, 403, { error: "Validacao adicional por email obrigatoria." });
+    return null;
+  }
+
   return { user, token, supabaseUrl: url, supabaseKey: key };
 }
 
