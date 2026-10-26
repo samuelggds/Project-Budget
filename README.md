@@ -19,7 +19,7 @@ Copie `.env.example` para `.env` e ajuste `VITE_API_URL` quando o backend estive
 4. Copie `.env.example` para `.env` e informe:
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_PUBLISHABLE_KEY` (a chave pública/publishable, nunca `service_role`)
-   - `VITE_ADMIN_EMAIL` com o e-mail exato da conta única
+   - Configure ADMIN_EMAIL somente nas variáveis privadas do servidor
 5. Cadastre a URL de produção nas configurações de URL do Supabase antes do deploy.
 
 O aplicativo não possui tela nem função de cadastro. A sessão é conferida com o servidor do Supabase, contas com outro e-mail são desconectadas e o botão de sair encerra somente a sessão do dispositivo atual.
