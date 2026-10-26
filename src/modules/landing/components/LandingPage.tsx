@@ -305,8 +305,6 @@ export function LandingPage() {
                     onError={(event) => { event.currentTarget.style.display = 'none' }}
                   />
                 </div>
-                <strong>CIALNE</strong>
-                <span>Empresa atendida</span>
               </a>
               <a className="mg-client-brand" href="https://maranguapelaticinios.com.br/" target="_blank" rel="noopener noreferrer" aria-label="Visitar site oficial da Maranguape Laticínios">
                 <div className="mg-client-brand-image">
@@ -320,8 +318,6 @@ export function LandingPage() {
                     onError={(event) => { event.currentTarget.style.display = 'none' }}
                   />
                 </div>
-                <strong>Leite Maranguape</strong>
-                <span>Empresa atendida</span>
               </a>
             </div>
           </div>

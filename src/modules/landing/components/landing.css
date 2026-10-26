@@ -62,3 +62,8 @@
 .mg-landing .mg-client-brand:focus-visible{outline:3px solid #3b82f6;outline-offset:3px}
 .mg-landing .mg-client-brand:hover{border-color:#b6d0ef}
 @media(max-width:600px){.mg-landing .mg-client-brand-image{height:75px}}
+
+/* Cards apresentam exclusivamente os logotipos, com area clicavel uniforme. */
+.mg-landing .mg-client-brand{min-height:155px;gap:0}
+.mg-landing .mg-client-brand-image{height:112px}
+@media(max-width:600px){.mg-landing .mg-client-brand{min-height:120px}.mg-landing .mg-client-brand-image{height:88px}}
