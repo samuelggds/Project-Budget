@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import './landing.css'
 
 const whatsappNumber = '5585989323113'
@@ -118,6 +118,25 @@ const navLinks = [
 export function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false)
 
+  useEffect(() => {
+    const targets = document.querySelectorAll<HTMLElement>('.mg-landing .mg-reveal');
+    if (!('IntersectionObserver' in window) || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      targets.forEach((target) => target.classList.add('mg-reveal-visible'));
+      return;
+    }
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('mg-reveal-visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -25px 0px' });
+    targets.forEach((target) => observer.observe(target));
+    return () => observer.disconnect();
+  }, []);
+
+
   return (
     <div className="mg-landing" id="inicio">
       <a className="mg-skip-link" href="#conteudo">Pular para o conteúdo</a>
@@ -125,7 +144,7 @@ export function LandingPage() {
       <header className="mg-header">
         <div className="mg-container mg-header-inner">
           <a href="#inicio" className="mg-brand" aria-label="MG Refrigerações, início" onClick={() => setMenuOpen(false)}>
-            <span className="mg-brand-mark"><img src="/MG_cropped.png" alt="Logo oficial da MG Refrigeração" /></span>
+            <span className="mg-brand-mark"><img src="/MG_icon.png" alt="Logo oficial da MG Refrigeração" /></span>
             <span className="mg-brand-name"><strong>MG Refrigerações</strong><small>Soluções para transporte refrigerado</small></span>
           </a>
 
@@ -155,7 +174,7 @@ export function LandingPage() {
         <section className="mg-hero" aria-labelledby="mg-hero-title">
           <div className="mg-hero-glow" aria-hidden="true" />
           <div className="mg-container mg-hero-grid">
-            <div className="mg-hero-content">
+            <div className="mg-hero-content mg-hero-entrance">
               <span className="mg-eyebrow mg-eyebrow-light"><span className="mg-eyebrow-dot" /> ESPECIALISTAS EM TRANSPORTE REFRIGERADO</span>
               <h1 id="mg-hero-title">Sua carga precisa de frio. <span>Seu caminhão, de confiança.</span></h1>
               <p className="mg-hero-description">Soluções em refrigeração para baús de caminhões. A MG Refrigerações atende empresas que precisam cuidar dos equipamentos frigoríficos e manter sua operação preparada para a estrada.</p>
@@ -169,16 +188,16 @@ export function LandingPage() {
               </div>
             </div>
 
-            <div className="mg-hero-visual">
+            <div className="mg-hero-visual mg-hero-entrance mg-hero-entrance-delayed">
               <div className="mg-hero-photo">
                 <img
-                  src="https://images.unsplash.com/photo-1711942179703-fce59b6afac6?auto=format&fit=crop&w=1600&q=82"
-                  alt="Caminhão com baú e equipamento de refrigeração, imagem ilustrativa"
+                  src="https://commons.wikimedia.org/wiki/Special:FilePath/Ti%C3%A3o_Viana_cede_m%C3%A1quinas_pesadas_e_caminh%C3%A3o_frigor%C3%ADfico_para_piscicultores_(27042475972).jpg?width=1600"
+                  alt="Caminhão frigorífico usado no Brasil, imagem ilustrativa"
                   decoding="async"
                 />
               </div>
               <div className="mg-hero-visual-badge"><span className="mg-badge-icon"><Icon name="snow" size={28} /></span><span><strong>Refrigeração em movimento</strong><small>O cuidado que acompanha sua carga.</small></span></div>
-              <span className="mg-photo-note">Imagem ilustrativa · Bernd Dittrich / Unsplash</span>
+              <span className="mg-photo-note">Foto ilustrativa de caminhão frigorífico brasileiro · Wikimedia Commons</span>
             </div>
           </div>
           <div className="mg-hero-bottom-line" />
@@ -193,7 +212,7 @@ export function LandingPage() {
 
         <section className="mg-section mg-services" id="servicos" aria-labelledby="mg-services-title">
           <div className="mg-container">
-            <div className="mg-section-heading">
+            <div className="mg-section-heading mg-reveal">
               <div>
                 <span className="mg-eyebrow">NOSSAS SOLUÇÕES</span>
                 <h2 id="mg-services-title">O suporte que a sua <span>operação precisa.</span></h2>
@@ -202,7 +221,7 @@ export function LandingPage() {
             </div>
             <div className="mg-services-grid">
               {services.map((service) => (
-                <article className="mg-service-card" key={service.number}>
+                <article className="mg-service-card mg-reveal" key={service.number}>
                   <div className="mg-service-top"><span className="mg-service-icon"><Icon name={service.icon} size={29} /></span><span className="mg-service-number">{service.number}</span></div>
                   <h3>{service.title}</h3>
                   <p>{service.description}</p>
@@ -217,7 +236,7 @@ export function LandingPage() {
 
         <section className="mg-operation mg-section" aria-labelledby="mg-operation-title">
           <div className="mg-container mg-operation-grid">
-            <div className="mg-operation-photo">
+            <div className="mg-operation-photo mg-reveal">
               <img
                 src="https://images.unsplash.com/photo-1681514583222-0579e6835666?auto=format&fit=crop&w=1200&q=80"
                 alt="Caminhão refrigerado em área de operações logísticas, imagem ilustrativa"
@@ -226,7 +245,7 @@ export function LandingPage() {
               />
               <span>Imagem ilustrativa · MealPro / Unsplash</span>
             </div>
-            <div className="mg-operation-content">
+            <div className="mg-operation-content mg-reveal">
               <span className="mg-eyebrow">POR QUE FALAR COM A MG?</span>
               <h2 id="mg-operation-title">A refrigeração é parte essencial da sua entrega.</h2>
               <p>Quando a operação depende de temperatura controlada, acompanhar as condições do equipamento frigorífico faz parte do cuidado com o transporte.</p>
@@ -242,14 +261,14 @@ export function LandingPage() {
 
         <section className="mg-section mg-markets" id="empresas" aria-labelledby="mg-markets-title">
           <div className="mg-container">
-            <div className="mg-markets-header">
+            <div className="mg-markets-header mg-reveal">
               <span className="mg-eyebrow">PARA QUEM TRABALHAMOS</span>
               <h2 id="mg-markets-title">Seu negócio transporta cargas refrigeradas? <span>Podemos conversar.</span></h2>
               <p>Atendimento pensado para empresas que utilizam baús refrigerados no transporte e na distribuição de mercadorias.</p>
             </div>
             <div className="mg-markets-grid">
               {markets.map((market) => (
-                <article className="mg-market" key={market.number}>
+                <article className="mg-market mg-reveal" key={market.number}>
                   <span>{market.number}</span>
                   <h3>{market.title}</h3>
                   <p>{market.text}</p>
@@ -261,7 +280,7 @@ export function LandingPage() {
 
         <section className="mg-section mg-steps" aria-labelledby="mg-steps-title">
           <div className="mg-container">
-            <div className="mg-steps-heading"><span className="mg-eyebrow">CONTATO SIMPLES E DIRETO</span><h2 id="mg-steps-title">Como solicitar um atendimento</h2></div>
+            <div className="mg-steps-heading mg-reveal"><span className="mg-eyebrow">CONTATO SIMPLES E DIRETO</span><h2 id="mg-steps-title">Como solicitar um atendimento</h2></div>
             <div className="mg-steps-grid">
               <div><strong>01</strong><h3>Conte o que precisa</h3><p>Entre em contato e explique a necessidade do caminhão ou da frota.</p></div>
               <div><strong>02</strong><h3>Compartilhe os detalhes</h3><p>Informe o modelo do equipamento, os sintomas ou o serviço desejado.</p></div>
@@ -272,7 +291,7 @@ export function LandingPage() {
 
         <section className="mg-cta-section" id="contato" aria-labelledby="mg-contact-title">
           <div className="mg-container">
-            <div className="mg-cta-panel">
+            <div className="mg-cta-panel mg-reveal">
               <div className="mg-cta-decor" aria-hidden="true"><Icon name="snow" size={180} /></div>
               <div className="mg-cta-text">
                 <span className="mg-eyebrow mg-eyebrow-light">VAMOS CONVERSAR?</span>
@@ -288,7 +307,7 @@ export function LandingPage() {
       <footer className="mg-footer">
         <div className="mg-container mg-footer-grid">
           <div className="mg-footer-company">
-            <a className="mg-brand" href="#inicio"><span className="mg-brand-mark"><img src="/MG_cropped.png" alt="Logo da MG Refrigeração" /></span><span className="mg-brand-name"><strong>MG Refrigerações</strong><small>Refrigeração para transporte</small></span></a>
+            <a className="mg-brand" href="#inicio"><span className="mg-brand-mark"><img src="/MG_icon.png" alt="Logo da MG Refrigeração" /></span><span className="mg-brand-name"><strong>MG Refrigerações</strong><small>Refrigeração para transporte</small></span></a>
             <p>Soluções em refrigeração de baús de caminhões para empresas que dependem do transporte refrigerado.</p>
           </div>
           <div className="mg-footer-col">
