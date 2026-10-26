@@ -208,7 +208,7 @@ Secrets de build:
 - `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_PUBLISHABLE_KEY`
-- `VITE_ADMIN_EMAIL`
+- `ADMIN_EMAIL` (somente no backend Vercel)
 
 A chave publica permanece fixa em `MG-Orçamento/src-tauri/tauri.conf.json`.
 
