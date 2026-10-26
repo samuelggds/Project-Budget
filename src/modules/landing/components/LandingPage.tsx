@@ -296,7 +296,7 @@ export function LandingPage() {
               <a className="mg-client-brand" href="https://www.cialne.com.br/" target="_blank" rel="noopener noreferrer" aria-label="Visitar site oficial da CIALNE">
                 <div className="mg-client-brand-image">
                   <img
-                    src="https://d273ql64kms4t6.cloudfront.net/local-experts/local-experts_1122021-55545-pm_unnamed.png"
+                    src="/cialne-logo-blue-transparent.svg"
                     alt="Logotipo oficial da CIALNE"
                     width={240}
                     height={138}

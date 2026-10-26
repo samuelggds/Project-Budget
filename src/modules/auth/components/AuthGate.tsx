@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
-import { authorizedEmail, isAuthConfigured, supabase } from "../services/supabase";
+import { isAuthConfigured, supabase } from "../services/supabase";
 import { LoginPage } from "./LoginPage";
 import "./mfa.css";
 
@@ -34,8 +34,8 @@ export function AuthGate({ children }: { children: ReactNode }) {
     let seq = 0;
     const acceptUser = async (candidate: User | null) => {
       const current = ++seq;
-      const allowed = candidate && Boolean(authorizedEmail) && candidate.email?.toLowerCase() === authorizedEmail;
-      if (candidate && !allowed) await supabase.auth.signOut({ scope: "local" });
+      const allowed = Boolean(candidate);
+      
       if (!active || current !== seq) return;
       setUser(allowed ? candidate : null);
       setVerified(false);
