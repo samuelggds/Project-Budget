@@ -191,13 +191,16 @@ export function LandingPage() {
             <div className="mg-hero-visual mg-hero-entrance mg-hero-entrance-delayed">
               <div className="mg-hero-photo">
                 <img
-                  src="https://commons.wikimedia.org/wiki/Special:FilePath/Ti%C3%A3o_Viana_cede_m%C3%A1quinas_pesadas_e_caminh%C3%A3o_frigor%C3%ADfico_para_piscicultores_(27042475972).jpg?width=1600"
-                  alt="Caminhão frigorífico usado no Brasil, imagem ilustrativa"
+                  src="/caminhao-mg-refrigeracoes.webp"
+                  alt="Imagem ilustrativa de caminhão brasileiro refrigerado com a identidade visual MG Refrigerações"
                   decoding="async"
+                  loading="eager"
+                  width={1448}
+                  height={1086}
                 />
               </div>
               <div className="mg-hero-visual-badge"><span className="mg-badge-icon"><Icon name="snow" size={28} /></span><span><strong>Refrigeração em movimento</strong><small>O cuidado que acompanha sua carga.</small></span></div>
-              <span className="mg-photo-note">Foto: Sérgio Vale / Secom · CC BY 2.0 · Wikimedia Commons</span>
+              <span className="mg-photo-note">Imagem ilustrativa criada digitalmente · MG Refrigerações</span>
             </div>
           </div>
           <div className="mg-hero-bottom-line" />
