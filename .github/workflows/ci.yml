@@ -25,6 +25,7 @@ jobs:
       - name: Validate server and Lambda syntax
         run: |
           node --check api/_lib/security.mjs
+          node --check api/auth/admin-mfa.mjs
           node --check api/mail/send.mjs
           node --check api/mail/resend-webhook.mjs
           node --check api/mail/attachment.mjs
