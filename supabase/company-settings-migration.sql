@@ -46,7 +46,7 @@ insert into public.company_settings (
 values (
   'company',
   'MG Refrigeração',
-  '31.263.081/0001-46',
+  '69.487.236/0001-09',
   '(85) 98932-3113',
   'matheuslegend10@icloud.com',
   'Rua Francisco Calaça, 1688 — Fortaleza/CE — CEP 60.336-232'

@@ -374,7 +374,7 @@ export function LandingPage() {
             <span><Icon name="location" size={17} /> Fortaleza, Ceará</span>
           </div>
         </div>
-        <div className="mg-container mg-footer-bottom"><span>© {new Date().getFullYear()} MG Refrigerações · CNPJ 31.263.081/0001-46</span><span>Rua Francisco Calaça, 1688 · Fortaleza/CE</span></div>
+        <div className="mg-container mg-footer-bottom"><span>© {new Date().getFullYear()} MG Refrigerações · CNPJ 69.487.236/0001-09</span><span>Rua Francisco Calaça, 1688 · Fortaleza/CE</span></div>
       </footer>
 
       <a className="mg-floating-whatsapp" href={contactLink} target="_blank" rel="noopener noreferrer" aria-label="Solicitar orçamento pelo WhatsApp" title="Fale com a MG Refrigerações">
