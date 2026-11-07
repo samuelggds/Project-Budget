@@ -19,6 +19,13 @@ async function mfaRequest(action: "status" | "request" | "verify", code?: string
   return payload as { verified?: boolean; sent?: boolean; destination?: string; expiresAt?: string };
 }
 
+// Never trust a missing, invalid or already-expired server-issued MFA grant.
+function verifiedSessionExpiresAt(result: { verified?: boolean; expiresAt?: string }): string | null {
+  if (result.verified !== true || !result.expiresAt) return null;
+  const expiry = Date.parse(result.expiresAt);
+  return Number.isFinite(expiry) && expiry > Date.now() ? result.expiresAt : null;
+}
+
 export function AuthGate({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -45,8 +52,9 @@ export function AuthGate({ children }: { children: ReactNode }) {
         try {
           const status = await mfaRequest("status");
           if (!active || current !== seq) return;
-          setVerified(status.verified === true);
-          setExpiresAt(status.expiresAt || null);
+          const confirmedUntil = verifiedSessionExpiresAt(status);
+          setVerified(Boolean(confirmedUntil));
+          setExpiresAt(confirmedUntil);
         } catch {
           if (!active || current !== seq) return;
           setError("A validação de segurança está indisponível. Tente novamente.");
@@ -68,7 +76,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
     if (!verified || !expiresAt) return;
     const expiry = Date.parse(expiresAt);
     const remaining = expiry - Date.now();
-    if (remaining <= 0) { setVerified(false); return; }
+    if (!Number.isFinite(remaining) || remaining <= 0) { setVerified(false); return; }
     const timer = window.setTimeout(() => { setVerified(false); setCode(""); setNotice("Sua verificação expirou. Confirme novamente."); }, remaining);
     return () => window.clearTimeout(timer);
   }, [verified, expiresAt]);
@@ -78,7 +86,13 @@ export function AuthGate({ children }: { children: ReactNode }) {
     try {
       const result = await mfaRequest(action, action === "verify" ? code : undefined);
       if (action === "request") setNotice("Código enviado para " + (result.destination || "o e-mail cadastrado") + ". Válido por 5 minutos.");
-      if (action === "verify" && result.verified) { setVerified(true); setExpiresAt(result.expiresAt || null); setCode(""); }
+      if (action === "verify") {
+        const confirmedUntil = verifiedSessionExpiresAt(result);
+        if (!confirmedUntil) throw new Error("Não foi possível confirmar a validade da sua verificação. Tente novamente.");
+        setVerified(true);
+        setExpiresAt(confirmedUntil);
+        setCode("");
+      }
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : "Falha na verificação.");
     } finally { setBusy(false); }
