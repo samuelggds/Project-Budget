@@ -36,5 +36,7 @@ jobs:
           node --check aws/lambda/feedback-worker/index.mjs
       - name: Test admin MFA RPC security
         run: node --test tests/admin-mfa-rpc.test.mjs
+      - name: Test seven-day MFA session contract
+        run: node --test tests/admin-mfa-seven-day-session.test.mjs
       - name: Test mail webhook security
         run: node --test tests/resend-webhook-signature.test.mjs
