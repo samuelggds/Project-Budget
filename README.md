@@ -1,41 +1,59 @@
 # MG Orçamentos
 
-Frontend React + TypeScript para clientes, catálogo de serviços, orçamentos e PDFs.
+**Aplicação corporativa para gestão de orçamentos e comunicação com clientes** · React · TypeScript · Supabase · AWS · Resend · Tauri
 
-## Executar
+Este repositório contém a aplicação MG Orçamentos associada à MG Refrigerações. O sistema reúne cadastros, emissão de orçamentos e documentos em PDF, além de fluxos de e-mail corporativo. É diferente do projeto experimental de assinaturas do repositório [Projeto-Budget-2](https://github.com/samuelggds/Projeto-Budget-2).
+
+## O problema que a aplicação resolve
+
+O trabalho administrativo exige acompanhar clientes, serviços, documentos e mensagens de orçamento sem espalhar o histórico por várias ferramentas. A aplicação reúne esses fluxos e aplica autenticação e regras de acesso à área administrativa.
+
+| Área | Implementação |
+| --- | --- |
+| Interface | React, TypeScript e Vite |
+| Orçamentos | Cálculos, histórico, status e geração de PDFs |
+| Dados e identidade | Supabase Auth, PostgreSQL e políticas RLS |
+| Verificação administrativa | MFA por e-mail com validação via API |
+| E-mail de entrada | Amazon SES → S3 → SQS → Lambda → Supabase |
+| E-mail de saída | Resend e webhook para atualização de eventos |
+| Desktop | Estrutura Tauri com atualizações do aplicativo |
+
+## Responsabilidades e decisões técnicas
+
+Projeto independente de Samuel Gomes: implementação de interface e regras de negócio, integração com banco e provedores externos, autenticação e documentação de implantação. Este README não atribui métricas de produtividade, faturamento ou usuários não verificadas.
+
+### Decisões técnicas relevantes
+
+- As chaves privadas de AWS, Resend e Supabase ficam em variáveis exclusivamente de servidor, nunca em `VITE_*`.
+- A área administrativa é protegida por sessão Supabase e uma etapa adicional de verificação por e-mail.
+- O recebimento e o envio de e-mail usam pipelines diferentes para facilitar operação e tratamento de falhas.
+- O fluxo de orçamento admite **Enviado → Em andamento → Aprovado → Pago**; **Recusado** é uma saída alternativa prevista.
+
+## Documentação técnica
+
+- [E-mail corporativo, webhooks e Tauri](docs/email-tauri-production.md)
+- [Frontend e módulos](src/modules/)
+- [Rotas de API](api/)
+- [Testes](tests/)
+- [Site institucional da MG Refrigerações](https://mgrefrigeracoes.com.br/) — não é uma demonstração pública do painel administrativo.
+
+## Executar localmente
 
 ```bash
 npm install
+cp .env.example .env
 npm run dev
 ```
 
-Copie `.env.example` para `.env` e ajuste `VITE_API_URL` quando o backend estiver disponível.
+Configure no `.env` o endereço e a chave pública do Supabase. Os fluxos que dependem de backend, MFA, SES e Resend exigem também as integrações e variáveis de servidor descritas em [`.env.example`](.env.example) e [documentação de implantação](docs/email-tauri-production.md). Não publique credenciais no repositório.
 
-## Login seguro com uma única conta
+### Observação sobre o legado de split
 
-1. Crie um projeto no Supabase.
-2. Em Authentication > Users, crie manualmente o único usuário administrador.
-3. Em Authentication > Sign In / Providers, desative **Allow new users to sign up**. Assim, somente contas já existentes poderão entrar.
-4. Copie `.env.example` para `.env` e informe:
-   - `VITE_SUPABASE_URL`
-   - `VITE_SUPABASE_PUBLISHABLE_KEY` (a chave pública/publishable, nunca `service_role`)
-   - Configure ADMIN_EMAIL somente nas variáveis privadas do servidor
-5. Cadastre a URL de produção nas configurações de URL do Supabase antes do deploy.
+**O código desta versão ainda contém `budgetSplit.ts` e referências de interface e banco para um split de 5%.** A presença desses módulos não deve ser confundida com a experiência principal descrita acima. Antes de removê-los, é necessário verificar dependências da interface, das migrations e dos dados; este PR altera **somente a documentação**, sem mudar regras de negócio.
 
-O aplicativo não possui tela nem função de cadastro. A sessão é conferida com o servidor do Supabase, contas com outro e-mail são desconectadas e o botão de sair encerra somente a sessão do dispositivo atual.
+## Mais projetos
 
-## Banco de dados
+- [GastroNexa](https://github.com/samuelggds/Projeto-Restaurants) — SaaS multi-restaurante com Node.js, React e PostgreSQL.
+- [SaaS de Orçamentos com Assinaturas](https://github.com/samuelggds/Projeto-Budget-2) — outro projeto, com cobrança Pix recorrente.
 
-Clientes, serviços, orçamentos e itens são lidos e gravados diretamente no Supabase usando a sessão autenticada e as políticas RLS. O backend deve validar o fluxo `Enviado → Em andamento → Aprovado → Pago`. `Recusado` é uma saída separada a partir de `Enviado` ou `Em andamento`. Nunca aceite regressão de status.
-
-Os PDFs continuam guardados no navegador via IndexedDB. Os registros e cálculos ficam sincronizados no Supabase; a sincronização dos próprios arquivos PDF exige configurar um bucket no Supabase Storage em uma etapa separada.
-
-## Configurações da empresa
-
-Os dados de **Configurações > Empresa** são persistidos no Supabase na tabela `company_settings`. Antes de publicar essa versão, execute uma vez `supabase/company-settings-migration.sql` no **Supabase SQL Editor**. A migration cria a tabela, a linha inicial e as políticas RLS para a conta autenticada.
-
-Razão social, CNPJ, telefone, e-mail e endereço passam a ser carregados do banco e usados no cabeçalho/assinatura dos orçamentos gerados.
-
-## Split
-
-O frontend calcula 5% sobre orçamentos `Aprovado` ou `Pago`. O status `Pago` do orçamento não quita o split. O pagamento do split é controlado separadamente em `budgets.split_paid_at`: somente o botão manual da aba Splits abate o valor do total pendente. Execute `supabase/split-payment-migration.sql` uma vez no SQL Editor antes de usar essa versão.
+[Perfil de Samuel Gomes](https://github.com/samuelggds) · [LinkedIn](https://www.linkedin.com/in/samuel-gomes08/)
